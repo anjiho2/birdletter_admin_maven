@@ -1,0 +1,1687 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.challabros.birdletter.admin.mapper.StatisticsMapper">
+
+	<resultMap id="cornSaleStatisticsMap" type="com.challabros.birdletter.admin.dto.ItemBuyRankDto">
+		<result property="date" column="date"/>
+		<result property="cnt"	column="cnt"/>
+	</resultMap>
+	
+	<resultMap id="userGenderStatsicsMap" type="com.challabros.birdletter.admin.dto.UserProfileDto">
+		<result property="gender" column="gender"/>
+		<result property="cnt" column="cnt"/>
+	</resultMap>
+	
+	<select id="cornSaleStatistics" resultMap="cornSaleStatisticsMap">
+		SELECT
+			substring(A.create_date,1,7) as date,
+			count(A.user_id)as cnt 
+		FROM 
+			CORN_BUY_LOG A
+		LEFT JOIN
+			BIRD_USER B
+		ON
+			A.user_id = B.user_id 
+		WHERE 
+			substring(A.create_date,1,4) = #{year}
+		AND
+			B.user_status = 'NORMAL'
+		GROUP BY DATE
+	</select>
+	
+	<select id="cornSaleStatisticsAmount" resultMap="cornSaleStatisticsMap">
+		SELECT
+			substring(A.create_date,1,7) as date, 
+			sum(	CASE B.corn_count
+					WHEN 10 THEN 1100
+					WHEN 22 THEN 2200
+					WHEN 55 THEN 5500
+					WHEN 115 THEN 11000
+					WHEN 240 THEN 22000
+					WHEN 600 THEN 55000
+					ELSE corn_count END
+				) as cnt 
+		FROM 
+			CORN_BUY_LOG A, CORN_INFO B, BIRD_USER C
+		WHERE
+			A.corn_idx = B.corn_idx
+		AND
+			A.user_id = C.user_id
+		AND
+			substring(A.create_date,1,4) = #{year}
+		AND
+			C.user_status = 'NORMAL'
+		GROUP BY DATE
+	</select>
+	
+	<select id="popcornSaleStatistics" resultMap="cornSaleStatisticsMap">
+		SELECT 
+			substring(A.create_date,1,7) as date,
+			count(A.user_id)as cnt 
+		FROM 
+			POPCORN_BUY_LOG A
+		LEFT JOIN
+			BIRD_USER B
+		ON
+			A.user_id = B.user_id 
+		WHERE 
+			substring(A.create_date,1,4) = #{year}
+		AND
+			B.user_status = 'NORMAL'
+		GROUP BY DATE
+	</select>
+	
+	<select id="popcornSaleStatisticsAmount" resultMap="cornSaleStatisticsMap">
+		SELECT
+			substring(A.create_date,1,7) as date, 
+			sum(B.popcorn_point) as cnt 
+		FROM 
+			POPCORN_BUY_LOG A, POPCORN_INFO B, BIRD_USER C
+		WHERE
+			A.popcorn_idx = B.popcorn_idx
+		AND 
+			A.user_id = C.user_id
+        AND
+			substring(A.create_date,1,4) = #{year}
+		AND
+			C.user_status = 'NORMAL'
+		GROUP BY DATE
+	</select>
+	
+	<select id="cornSaleYearStatistics" resultMap="cornSaleStatisticsMap">
+		SELECT
+			substring(A.create_date,1,4) as date,
+			count(A.user_id)as cnt 
+		FROM 
+			CORN_BUY_LOG A
+		LEFT JOIN
+			BIRD_USER B
+		ON
+			A.user_id = B.user_id
+		WHERE
+			B.user_status = 'NORMAL'
+		GROUP BY DATE
+	</select>
+	
+	<select id="cornSaleYearStatisticsAmount" resultMap="cornSaleStatisticsMap">
+		SELECT
+			substring(A.create_date,1,4) as date, 
+			sum(	
+					CASE B.corn_count
+					WHEN 10 THEN 1100
+					WHEN 22 THEN 2200
+					WHEN 55 THEN 5500
+					WHEN 115 THEN 11000
+					WHEN 240 THEN 22000
+					WHEN 600 THEN 55000
+					ELSE corn_count END
+				) as price 
+		FROM 
+			CORN_BUY_LOG A LEFT JOIN CORN_INFO B
+		ON
+			A.corn_idx = B.corn_idx
+		LEFT JOIN BIRD_USER C
+		ON
+			A.user_id = C.user_id
+		WHERE
+			C.user_status = 'NORMAL'
+		GROUP BY DATE 
+	</select>
+	
+	<select id="popcornSaleYearStatistics" resultMap="cornSaleStatisticsMap">
+		SELECT
+			substring(A.create_date,1,4) as date,
+			count(A.user_id)as cnt 
+		FROM 
+			POPCORN_BUY_LOG A LEFT JOIN BIRD_USER B
+		ON
+			A.user_id = B.user_id
+		WHERE
+			B.user_status = 'NORMAL'
+		GROUP BY DATE
+	</select>
+	
+	<select id="popcornSaleYearStatisticsAmount" resultMap="cornSaleStatisticsMap">
+		SELECT
+			substring(A.create_date,1,4) as date, 
+			sum(B.popcorn_point) as price 
+		FROM 
+			POPCORN_BUY_LOG A LEFT JOIN POPCORN_INFO B
+		ON
+			A.popcorn_idx = B.popcorn_idx
+		LEFT JOIN BIRD_USER C
+		ON
+			A.user_id = C.user_id
+		WHERE
+			C.user_status = 'NORMAL'
+		GROUP BY DATE
+	</select>
+	
+	<select id="userLetterSendCurrentStatistics" resultMap="cornSaleStatisticsMap">
+		SELECT 
+			substring(DATE_ADD(send_date, INTERVAL 9 HOUR),1,10) as date, 
+			count(*)as cnt 
+		FROM 
+			PRIVATE_LETTER_LOG 
+		<where>
+			<if test="userId > 0">
+				letter_sender_id = #{userId}
+			</if>
+		</where>
+		AND 
+			send_date > date_add(now(),interval -8 day)
+		GROUP BY DATE
+	</select>
+	
+	<select id="userOpenLetterSendCurrentStatistics" resultMap="cornSaleStatisticsMap">
+		SELECT
+			substring(DATE_ADD(create_date, INTERVAL 9 HOUR),1,10) as date,
+			count(owner_id) as cnt
+		FROM
+			OPEN_LETTER
+		<where>
+			<if test="userId > 0">
+				owner_id = #{userId}
+			</if>
+		</where>
+		AND
+			create_date > date_add(now(), INTERVAL -8 DAY)
+		GROUP BY DATE
+	</select>
+	
+	<select id="userProductBuyStatsics" resultType="UserProductBuyStatsicsDto">
+		SELECT 
+			pbl.user_id, bu.phone_number, up.user_name, count(pbl.user_id) as buyCnt 
+		FROM 
+			USER_PRODUCT_BUY_LOG pbl 
+		LEFT JOIN BIRD_USER bu
+		ON pbl.user_id = bu.user_id
+		LEFT JOIN USER_PROFILE up
+		ON bu.user_id = up.user_id
+		WHERE bu.user_status = 'NORMAL'
+		<if test="phoneNumber">
+			AND bu.phone_number LIKE CONCAT('%',#{phoneNumber},'%')
+		</if>
+		GROUP BY pbl.user_id
+		ORDER BY buyCnt DESC
+	</select>
+	
+	<select id="userProductBuyStatsicsByPopcorn" resultType="UserProductBuyStatsicsDto">
+		SELECT 
+			pbl.user_id, bu.phone_number, up.user_name, sum(pbl.popcornPrice) as popcorn
+		FROM 
+		USER_PRODUCT_BUY_LOG pbl 
+		LEFT JOIN BIRD_USER bu
+		ON pbl.user_id = bu.user_id
+		LEFT JOIN USER_PROFILE up
+		ON pbl.user_id = up.user_id
+		WHERE bu.user_status = 'NORMAL'
+		<if test="phoneNumber">
+			AND bu.phone_number LIKE CONCAT('%',#{phoneNumber},'%')
+		</if>
+		GROUP BY pbl.user_id
+	    ORDER BY popcorn DESC
+	</select>
+	
+	<select id="userProductBuyStatsicsByCorn" resultType="UserProductBuyStatsicsDto">
+		SELECT 
+			bu.phone_number, up.user_name, sum(pbl.cornPrice) as corn FROM 
+		USER_PRODUCT_BUY_LOG pbl 
+		LEFT JOIN BIRD_USER bu
+		ON pbl.user_id = bu.user_id
+		LEFT JOIN USER_PROFILE up
+		ON pbl.user_id = up.user_id
+		WHERE bu.user_status = 'NORMAL'
+		<if test="phoneNumber">
+			AND bu.phone_number LIKE CONCAT('%',#{phoneNumber},'%')
+		</if>
+		GROUP BY bu.user_id
+	    ORDER BY corn DESC
+	</select>
+	
+	<select id="userGenderStatsics" parameterType="Map" resultMap="userGenderStatsicsMap">
+		SELECT
+			A.gender,
+			count(A.gender) as cnt
+		FROM
+			USER_PROFILE A
+		LEFT JOIN BIRD_USER B
+		ON
+			A.user_id = B.user_id
+		WHERE
+			B.user_status = 'NORMAL'
+		<if test="termType == 'week'">
+			AND A.create_date BETWEEN #{startDate} AND #{endDate}
+		</if>
+		<if test="termType == 'month'">
+			AND A.create_date LIKE CONCAT(#{month},'%')
+		</if>
+		<if test="termType == 'year'">
+			AND A.create_date LIKE CONCAT(#{year},'%')
+		</if>
+		GROUP BY
+			A.gender
+	</select>
+	
+	<select id="messageSendStaticsByGender" parameterType="Map" resultMap="userGenderStatsicsMap">
+		SELECT 
+			B.gender, count(B.gender)as cnt 
+		FROM 
+			PRIVATE_LETTER_LOG A
+		LEFT JOIN 
+			USER_PROFILE B
+		ON 
+			A.letter_sender_id = B.user_id
+		LEFT JOIN
+			BIRD_USER C
+		ON
+			B.user_id = C.user_id
+		WHERE
+			C.user_status = 'NORMAL'
+		<if test="termType == 'week'">
+			AND A.send_date BETWEEN #{startDate} AND #{endDate}
+		</if>
+		<if test="termType == 'month'">
+			AND A.send_date LIKE CONCAT(#{month},'%')
+		</if>
+		<if test="termType == 'year'">
+			AND A.send_date LIKE CONCAT(#{year},'%')
+		</if>
+		GROUP BY gender	
+	</select>
+	
+	<select id="userAgeStatics" parameterType="Map" resultType="UserProfileDto">
+		SELECT
+			LEFT((YEAR(NOW()) - SUBSTRING(A.birth_day,1,4)),1) as age2,
+			COUNT(A.user_id) as cnt
+		FROM
+			USER_PROFILE A
+		RIGHT JOIN
+			BIRD_USER B
+		ON
+			A.user_id = B.user_id
+		WHERE
+			B.user_status = 'NORMAL'
+		<if test="termType == 'week'">
+			AND A.create_date BETWEEN #{startDate} AND #{endDate}
+		</if>
+		<if test="termType == 'month'">
+			AND A.create_date LIKE CONCAT(#{month},'%')
+		</if>
+		<if test="termType == 'year'">
+			AND A.create_date LIKE CONCAT(#{year},'%')
+		</if>
+		GROUP BY LEFT((YEAR(NOW()) - SUBSTRING(A.birth_day,1,4)),1) 
+	</select>
+	
+	<select id="messageSendStaticsGroupByAges" parameterType="Map" resultType="UserProfileDto">
+		SELECT
+			LEFT ((YEAR(NOW()) - SUBSTRING(B.birth_day,1,4)),1) as age,
+			count(A.letter_sender_id) as cnt
+		FROM
+			PRIVATE_LETTER_LOG A
+		LEFT JOIN
+			USER_PROFILE B
+		ON
+			A.letter_sender_id = B.user_id
+		LEFT JOIN
+			BIRD_USER C
+		ON
+			B.user_id = C.user_id
+		WHERE
+			C.user_status = 'NORMAL'
+		<if test="termType == 'week'">
+			AND A.send_date BETWEEN #{startDate} AND #{endDate}
+		</if>
+		<if test="termType == 'month'">
+			AND A.send_date LIKE CONCAT(#{month},'%')
+		</if>
+		<if test="termType == 'year'">
+			AND A.send_date LIKE CONCAT(#{year},'%')
+		</if>
+		GROUP BY LEFT ((YEAR(NOW()) - SUBSTRING(B.birth_day,1,4)),1)
+	</select>
+	
+	<select id="openLetterStaticsGroupByAge" parameterType="Map" resultType="UserProfileDto">
+		SELECT
+	        left((year(now()) - substring(B.birth_day,1,4)),1) as age,
+	        count(A.owner_id) as cnt
+		FROM
+			OPEN_LETTER A LEFT JOIN USER_PROFILE B
+		ON 
+			A.owner_id = B.user_id LEFT JOIN BIRD_USER C
+		ON
+			B.user_id = C.user_id
+		WHERE
+			C.user_status = 'NORMAL'
+		<if test="termType == 'week'">
+			AND A.create_date BETWEEN #{startDate} AND #{endDate}
+		</if>
+		<if test="termType == 'month'">
+			AND A.create_date LIKE CONCAT(#{month},'%')
+		</if>
+		<if test="termType == 'year'">
+			AND A.create_date LIKE CONCAT(#{year},'%')
+		</if>
+		GROUP BY LEFT((year(now()) - substring(B.birth_day,1,4)),1)
+	</select>
+	
+	<select id="userMessageSendStatistics" parameterType="Map" resultType="Map">
+		SELECT *
+			FROM (
+				SELECT @ROWNUM:=@ROWNUM+1 AS ROWNUM, D.*
+				FROM (			
+						SELECT
+							A.letter_sender_id,
+							count(A.letter_sender_id) as cnt,
+							B.user_name,
+							B.gender,
+							C.phone_number
+						FROM PRIVATE_LETTER_LOG A LEFT JOIN	USER_PROFILE B
+						ON A.letter_sender_id = B.user_id LEFT JOIN	BIRD_USER C
+						ON B.user_id = C.user_id
+						WHERE A.letter_sender_id != ""
+						AND C.user_status = 'NORMAL'
+						<if test="startDate != ''">
+							AND A.send_date BETWEEN #{startDate} AND #{endDate}
+						</if>
+						<if test="userName != ''">
+							AND B.user_name LIKE CONCAT ('%',#{userName},'%')
+						</if>
+						<if test="gender != ''">
+							AND B.gender = #{gender}
+						</if>
+						GROUP BY A.letter_sender_id
+						ORDER BY cnt DESC	
+					) D, (SELECT @ROWNUM:=0) R
+				)Z
+		<if test="start != ''">
+			WHERE Z.ROWNUM BETWEEN #{start} AND #{end}
+		</if>				
+	</select>
+	
+	<select id="userMessageSendStatisticsCnt" resultType="Integer">
+		SELECT
+			count(A.letter_sender_id) as cnt
+		FROM PRIVATE_LETTER_LOG A LEFT JOIN	USER_PROFILE B
+		ON A.letter_sender_id = B.user_id LEFT JOIN	BIRD_USER C
+		ON B.user_id = C.user_id
+		WHERE A.letter_sender_id != ""
+		AND C.user_status = 'NORMAL'
+		<if test="startDate != ''">
+			AND A.send_date BETWEEN #{startDate} AND #{endDate}
+		</if>
+		<if test="userName != ''">
+			AND B.user_name LIKE CONCAT ('%',#{userName},'%')
+		</if>
+		<if test="gender != ''">
+			AND B.gender = #{gender}
+		</if>
+	</select>
+	
+	<select id="userOpenLetterStatistics" parameterType="Map" resultType="Map">
+		SELECT *
+	        FROM (
+	                SELECT @ROWNUM:=@ROWNUM+1 AS ROWNUM, D.*
+	                FROM (
+	                        SELECT
+								A.owner_id,
+								count(A.owner_id) as cnt,
+								B.user_name,
+								B.gender,
+								C.phone_number
+	                        FROM OPEN_LETTER A LEFT JOIN USER_PROFILE B
+	                        ON A.owner_id = B.user_id LEFT JOIN BIRD_USER C
+	                        ON B.user_id = C.user_id
+	                        WHERE A.owner_id != ""
+							AND C.user_status = 'NORMAL'
+							<if test="startDate != ''">
+							AND A.create_date BETWEEN #{startDate} AND #{endDate}
+							</if>
+							<if test="userName != ''">
+								AND B.user_name LIKE CONCAT ('%',#{userName},'%')
+							</if>
+							<if test="gender != ''">
+								AND B.gender = #{gender}
+							</if>
+	                        GROUP BY A.owner_id 
+	                        ORDER BY cnt DESC
+	                 )D, (SELECT @ROWNUM:=0)R
+				)Z
+		<if test="start != ''">
+			WHERE Z.ROWNUM BETWEEN #{start} AND #{end}
+		</if>
+	</select>
+	
+	<select id="userOpenLetterStatisticsCnt" resultType="Integer">
+		SELECT count(A.owner_id) as cnt
+        FROM OPEN_LETTER A LEFT JOIN USER_PROFILE B
+        ON A.owner_id = B.user_id LEFT JOIN BIRD_USER C
+        ON B.user_id = C.user_id
+        WHERE A.owner_id != ""
+		AND C.user_status = 'NORMAL'
+		<if test="startDate != ''">
+		AND A.create_date BETWEEN #{startDate} AND #{endDate}
+		</if>
+		<if test="userName != ''">
+			AND B.user_name LIKE CONCAT ('%',#{userName},'%')
+		</if>
+		<if test="gender != ''">
+			AND B.gender = #{gender}
+		</if>
+	</select>
+	
+	<select id="userMessageSendByDailyStats" parameterType="Map" resultType="Map">
+		SELECT 
+			hour(DATE_ADD(A.send_date, INTERVAL 9 HOUR)) as 'hour', 
+			count(A.letter_sender_id) as cnt
+		FROM PRIVATE_LETTER_LOG A
+		LEFT JOIN BIRD_USER B
+		ON A.letter_sender_id = B.user_id
+		WHERE B.user_status = 'NORMAL'
+		AND DATE_ADD(A.send_date, INTERVAL 9 HOUR) between #{startDate} AND #{endDate}
+		GROUP BY hour(DATE_ADD(A.send_date, INTERVAL 9 HOUR))
+		ORDER BY hour(DATE_ADD(A.send_date, INTERVAL 9 HOUR)) ASC
+	</select>
+	
+	<select id="userOpenLetterDailyStatistics" parameterType="Map" resultType="Map">
+		SELECT 
+			hour(DATE_ADD(A.create_date, INTERVAL 9 HOUR)) as 'hour', 
+			count(A.letter_id) as cnt
+		FROM OPEN_LETTER A LEFT JOIN BIRD_USER B
+		ON A.owner_id = B.user_id
+		WHERE B.user_status = 'NORMAL'
+		AND DATE_ADD(A.create_date, INTERVAL 9 HOUR) between #{startDate} AND #{endDate}
+		GROUP BY hour(DATE_ADD(A.create_date, INTERVAL 9 HOUR))
+		ORDER BY hour(DATE_ADD(A.create_date, INTERVAL 9 HOUR)) ASC
+	</select>
+	
+	<select id="userMessageSendByWeekStats" parameterType="Map" resultType="Map">
+		SELECT 
+			CASE WHEN DAYOFWEEK(DATE_ADD(A.send_date, INTERVAL 9 HOUR)) = 1 THEN '일'
+				WHEN DAYOFWEEK(DATE_ADD(A.send_date, INTERVAL 9 HOUR)) = 2 THEN '월'
+				WHEN DAYOFWEEK(DATE_ADD(A.send_date, INTERVAL 9 HOUR)) = 3 THEN '화'
+				WHEN DAYOFWEEK(DATE_ADD(A.send_date, INTERVAL 9 HOUR)) = 4 THEN '수'
+				WHEN DAYOFWEEK(DATE_ADD(A.send_date, INTERVAL 9 HOUR)) = 5 THEN '목'
+				WHEN DAYOFWEEK(DATE_ADD(A.send_date, INTERVAL 9 HOUR)) = 6 THEN '금'
+				WHEN DAYOFWEEK(DATE_ADD(A.send_date, INTERVAL 9 HOUR)) = 7 THEN '토'
+			ELSE '오류' END week_name
+		    	,count(A.letter_sender_id)as cnt
+		FROM PRIVATE_LETTER_LOG A LEFT JOIN BIRD_USER B
+		ON A.letter_sender_id = B.user_id
+		WHERE B.user_status = 'NORMAL'
+		AND DATE_ADD(A.send_date, INTERVAL 9 HOUR) BETWEEN #{startDate} AND #{endDate}
+		GROUP BY dayofweek(DATE_ADD(A.send_date, INTERVAL 9 HOUR))
+	</select>
+	
+	<select id="userOpenLetterWeekStatistics" parameterType="Map" resultType="Map">
+		SELECT 
+			CASE WHEN DAYOFWEEK(DATE_ADD(A.create_date, INTERVAL 9 HOUR)) = 1 THEN '일'
+				WHEN DAYOFWEEK(DATE_ADD(A.create_date, INTERVAL 9 HOUR)) = 2 THEN '월'
+				WHEN DAYOFWEEK(DATE_ADD(A.create_date, INTERVAL 9 HOUR)) = 3 THEN '화'
+				WHEN DAYOFWEEK(DATE_ADD(A.create_date, INTERVAL 9 HOUR)) = 4 THEN '수'
+				WHEN DAYOFWEEK(DATE_ADD(A.create_date, INTERVAL 9 HOUR)) = 5 THEN '목'
+				WHEN DAYOFWEEK(DATE_ADD(A.create_date, INTERVAL 9 HOUR)) = 6 THEN '금'
+				WHEN DAYOFWEEK(DATE_ADD(A.create_date, INTERVAL 9 HOUR)) = 7 THEN '토'
+			ELSE '오류' END week_name
+		    	,count(letter_id)as cnt
+		FROM OPEN_LETTER A LEFT JOIN BIRD_USER B
+		ON A.owner_id = B.user_id
+		WHERE B.user_status = 'NORMAL'
+		AND DATE_ADD(A.create_date, INTERVAL 9 HOUR) BETWEEN #{startDate} AND #{endDate}
+		GROUP BY dayofweek(DATE_ADD(A.create_date, INTERVAL 9 HOUR))
+	</select>
+	
+	<select id="checkDownloadCount" parameterType="Map" resultType="Integer">
+		SELECT count(idx) as cnt
+		FROM DOWNLOAD_COUNT_INFO
+		WHERE device = #{device}
+		AND create_date = #{createDate}
+	</select>
+	
+	<insert id="insertDownloadCount" parameterType="DownloadCountInfoDto">
+		INSERT INTO DOWNLOAD_COUNT_INFO 
+		(
+			device, 
+			download_count, 
+			create_date
+		)
+		VALUES
+		(
+			#{device},
+			#{downloadCount},
+			#{createDate}
+		)
+	</insert>
+	
+	<update id="updateDownloadCount" parameterType="DownloadCountInfoDto">
+		UPDATE DOWNLOAD_COUNT_INFO
+		<set>
+			download_count = #{downloadCount}
+		</set>
+		WHERE device = #{device}
+		AND	create_date = #{createDate}
+	</update>
+	
+	<select id="getAccumulate" resultType="Map">
+		SELECT
+			count(user_id) as userCnt,
+			IFNULL( (SELECT sum(download_count) FROM DOWNLOAD_COUNT_INFO ), 0) as downloadCnt,
+	       (IFNULL( ( SELECT count(letter_id) FROM OPEN_LETTER ), 0) + IFNULL( ( SELECT count(idx) FROM PRIVATE_LETTER_LOG ), 0) )  as letterCnt   	
+		FROM BIRD_USER
+		WHERE user_status = 'NORMAL'
+	</select>
+	
+	<select id="dailyDownloadStatistics" parameterType="String" resultType="DownloadCountInfoDto">
+		SELECT 
+			T.createDate, (IFNULL(TT.android,0) +  IFNULL(TTT.ios,0))as total, IFNULL(TT.android,0)as android, IFNULL(TTT.ios,0) as ios 
+			FROM
+			(
+				SELECT DATE(create_date) as createDate, download_count as total
+				FROM DOWNLOAD_COUNT_INFO
+				WHERE device IN ('ANDROID','IOS')
+				AND 
+				<![CDATA[
+					create_date <= #{searchDate}
+				]]>
+				GROUP BY create_date
+				ORDER BY create_date DESC 
+				LIMIT 14
+			)T
+			LEFT OUTER JOIN
+			(
+				SELECT DATE(create_date) as createDate, download_count as android
+				FROM DOWNLOAD_COUNT_INFO
+				WHERE device = 'ANDROID'
+				AND 
+				<![CDATA[
+					create_date <= #{searchDate}
+				]]>
+				GROUP BY create_date
+				ORDER BY create_date DESC 
+				LIMIT 14
+			)TT
+			ON T.createDate = TT.createDate
+			LEFT OUTER JOIN
+			(
+				SELECT DATE(create_date) as createDate, download_count as ios
+				FROM DOWNLOAD_COUNT_INFO
+				WHERE device = 'IOS'
+				AND 
+				<![CDATA[
+					create_date <= #{searchDate}
+				]]>
+				GROUP BY create_date
+				ORDER BY create_date DESC 
+				LIMIT 14
+			)TTT
+            ON T.createDate = TTT.createDate
+            ORDER BY T.createDate ASC
+	</select>
+	
+	<select id="weeklyDownloadStatistics" parameterType="String" resultType="DownloadCountInfoDto">
+		SELECT 
+			T.createDate, IFNULL(T.ios,0)as ios, IFNULL(TT.android,0)as android, (IFNULL(T.ios,0) + IFNULL(TT.android,0)) as total
+		FROM
+			(
+			SELECT
+				WEEK(DATE_ADD(create_date, INTERVAL 9 HOUR)) as createDate,
+				sum(download_count) as ios
+			FROM DOWNLOAD_COUNT_INFO
+			WHERE device = 'IOS'
+			AND
+			<![CDATA[
+				DATE_ADD(create_date, INTERVAL 9 HOUR) <= #{searchDate}
+			]]>
+			GROUP BY YEARWEEK(DATE_ADD(create_date, INTERVAL 9 HOUR))
+			ORDER BY YEARWEEK(DATE_ADD(create_date, INTERVAL 9 HOUR)) DESC LIMIT 14
+			)T
+			LEFT OUTER JOIN
+			(
+			SELECT
+				WEEK(DATE_ADD(create_date, INTERVAL 9 HOUR)) as createDate,
+				sum(download_count) as android
+			FROM DOWNLOAD_COUNT_INFO
+			WHERE device = 'ANDROID'
+			AND
+			<![CDATA[
+				DATE_ADD(create_date, INTERVAL 9 HOUR) <= #{searchDate}
+			]]>
+			GROUP BY YEARWEEK(DATE_ADD(create_date, INTERVAL 9 HOUR))
+			ORDER BY YEARWEEK(DATE_ADD(create_date, INTERVAL 9 HOUR)) DESC LIMIT 14
+			)TT
+			ON T.createDate = TT.createDate
+			LEFT OUTER JOIN
+			(
+			SELECT
+				WEEK(DATE_ADD(create_date, INTERVAL 9 HOUR)) as createDate,
+				sum(download_count) as total
+			FROM DOWNLOAD_COUNT_INFO
+			WHERE device IN ('IOS','ANDROID')
+			AND
+			<![CDATA[
+				DATE_ADD(create_date, INTERVAL 9 HOUR) <= #{searchDate}
+			]]>
+			GROUP BY YEARWEEK(DATE_ADD(create_date, INTERVAL 9 HOUR))
+			ORDER BY YEARWEEK(DATE_ADD(create_date, INTERVAL 9 HOUR)) DESC LIMIT 14
+			)TTT
+		ON T.createDate = TTT.createDate
+	</select>
+	
+	<select id="monthlyDownloadStatistics" parameterType="String" resultType="DownloadCountInfoDto">
+		SELECT T.createDate, T.ios, TT.android, TTT.total
+		FROM
+		(
+			SELECT 
+				substring(DATE_ADD(create_date, INTERVAL 9 HOUR),1,7) as createDate,
+				sum(download_count) as ios
+			FROM DOWNLOAD_COUNT_INFO
+			WHERE device = 'IOS'
+			AND substring(DATE_ADD(create_date, INTERVAL 9 HOUR),1,7) BETWEEN #{startMonth} AND #{endMonth}
+			GROUP BY substring(DATE_ADD(create_date, INTERVAL 9 HOUR),1,7)
+		)T
+		LEFT OUTER JOIN
+		(
+			SELECT
+				substring(DATE_ADD(create_date, INTERVAL 9 HOUR),1,7) as createDate,
+				sum(download_count) as android
+			FROM DOWNLOAD_COUNT_INFO
+			WHERE device = 'ANDROID'
+			AND substring(DATE_ADD(create_date, INTERVAL 9 HOUR),1,7) BETWEEN #{startMonth} AND #{endMonth}
+			GROUP BY substring(DATE_ADD(create_date, INTERVAL 9 HOUR),1,7)
+		)TT
+		ON T.createDate = TT.createDate
+		LEFT OUTER JOIN
+		(
+			SELECT
+				substring(DATE_ADD(create_date, INTERVAL 9 HOUR),1,7) as createDate,
+				sum(download_count) as total
+			FROM DOWNLOAD_COUNT_INFO
+			WHERE device in ('IOS','ANDROID')
+			AND substring(DATE_ADD(create_date, INTERVAL 9 HOUR),1,7) BETWEEN #{startMonth} AND #{endMonth}
+			GROUP BY substring(DATE_ADD(create_date, INTERVAL 9 HOUR),1,7)
+		)TTT
+		ON T.createDate = TTT.createDate
+	</select>
+	
+	<select id="yearDownloadStatistics" parameterType="String" resultType="DownloadCountInfoDto">
+		SELECT 
+			T.createDate, IFNULL(TT.ios,0) as ios, T.android, TTT.total
+		FROM
+			(
+				SELECT
+					substring(DATE_ADD(create_date, INTERVAL 9 HOUR),1,4) as createDate,
+					sum(download_count) as android
+				FROM DOWNLOAD_COUNT_INFO
+				WHERE device = 'ANDROID'
+				<![CDATA[
+				AND substring(DATE_ADD(create_date, INTERVAL 9 HOUR),1,4) <= #{thisYear}
+				]]>
+				GROUP BY createDate
+			)T
+			LEFT OUTER JOIN
+			(
+				SELECT
+					substring(DATE_ADD(create_date, INTERVAL 9 HOUR),1,4) as createDate,
+					sum(download_count) as ios
+				FROM DOWNLOAD_COUNT_INFO
+				WHERE device = 'IOS'
+				<![CDATA[
+				AND substring(DATE_ADD(create_date, INTERVAL 9 HOUR),1,4) <= #{thisYear}
+				]]>
+				GROUP BY createDate
+			)TT
+			ON T.createDate = TT.createDate
+			LEFT OUTER JOIN
+			(
+				SELECT
+					substring(DATE_ADD(create_date, INTERVAL 9 HOUR),1,4) as createDate,
+					sum(download_count) as total
+				FROM DOWNLOAD_COUNT_INFO
+				WHERE device in ('IOS','ANDROID')
+				<![CDATA[
+				AND substring(DATE_ADD(create_date, INTERVAL 9 HOUR),1,4) <= #{thisYear}
+				]]>
+				GROUP BY createDate
+			)TTT
+			ON T.createDate = TTT.createDate
+	</select>
+	
+	<select id="dailyMemberRegStatistics" parameterType="String" resultType="MemberStatisticsDto">
+		SELECT T.date, IFNULL(TTT.male,0) as male, IFNULL(TT.female,0) as female, IFNULL(IFNULL(TTT.male,0) + IFNULL(TT.female,0),0) as total FROM
+			(
+				SELECT
+					DATE(DATE_ADD(A.create_date, INTERVAL 9 HOUR)) as date,
+					count(A.user_id) as total
+				FROM USER_PROFILE A LEFT JOIN  BIRD_USER B
+				ON A.user_id = B.user_id
+		        WHERE DATE(DATE_ADD(A.create_date, INTERVAL 9 HOUR)) BETWEEN #{startDate} AND #{today}
+				GROUP BY date
+				ORDER BY date DESC 
+				LIMIT 14
+			)T
+			LEFT OUTER JOIN
+			(
+				SELECT
+					DATE(DATE_ADD(A.create_date, INTERVAL 9 HOUR)) as date,
+					count(A.user_id) as female
+				FROM USER_PROFILE A LEFT JOIN BIRD_USER B
+				ON A.user_id = B.user_id
+				WHERE A.gender ='FEMALE'
+				AND DATE(DATE_ADD(A.create_date, INTERVAL 9 HOUR)) BETWEEN #{startDate} AND #{today}
+				GROUP BY date
+				ORDER BY date DESC 
+				LIMIT 14
+			)TT
+			ON T.date = TT.date
+			LEFT OUTER JOIN
+			(
+				SELECT
+					DATE(DATE_ADD(A.create_date, INTERVAL 9 HOUR)) as date,
+					count(A.user_id) as male
+				FROM
+					USER_PROFILE A LEFT JOIN BIRD_USER B
+				ON A.user_id = B.user_id
+				WHERE A.gender ='MALE'
+				AND DATE(DATE_ADD(A.create_date, INTERVAL 9 HOUR)) BETWEEN #{startDate} AND #{today}
+				GROUP BY date
+				ORDER BY date DESC 
+				LIMIT 14
+			)TTT
+			ON TT.date = TTT.date
+			ORDER BY T.date ASC
+	</select>
+	
+	<select id="weeklyMemberRegStatistics" parameterType="String" resultType="MemberStatisticsDto">
+		SELECT
+			T.date, IFNULL(TTT.male,0) as male, IFNULL(TT.female,0) as female, IFNULL(IFNULL(TTT.male,0) + IFNULL(TT.female,0),0) as total FROM
+				(
+				SELECT
+					WEEK(DATE_ADD(B.create_date, INTERVAL 9 HOUR)) as date,
+					count(B.user_id) as total
+				FROM USER_PROFILE A LEFT JOIN BIRD_USER B 
+				ON A.user_id = B.user_id
+				WHERE
+				<![CDATA[
+					DATE_ADD(B.create_date, INTERVAL 9 HOUR) <= #{searchDate}						
+				]]>
+				GROUP BY YEARWEEK(DATE_ADD(B.create_date, INTERVAL 9 HOUR))
+				ORDER BY YEARWEEK(DATE_ADD(B.create_date, INTERVAL 9 HOUR)) DESC LIMIT 14
+				)T
+			LEFT OUTER JOIN
+				(
+				SELECT
+					WEEK(DATE_ADD(B.create_date, INTERVAL 9 HOUR)) as date,
+					count(B.user_id) as female
+				FROM USER_PROFILE A LEFT JOIN BIRD_USER B 
+				ON A.user_id = B.user_id
+				WHERE A.gender = 'FEMALE'
+				AND
+				<![CDATA[
+					DATE_ADD(B.create_date, INTERVAL 9 HOUR) <= #{searchDate}						
+				]]>
+				GROUP BY YEARWEEK(DATE_ADD(B.create_date, INTERVAL 9 HOUR))
+				ORDER BY YEARWEEK(DATE_ADD(B.create_date, INTERVAL 9 HOUR)) DESC LIMIT 14
+				)TT
+			ON T.date = TT.date
+			LEFT OUTER JOIN
+				(
+				SELECT
+					WEEK(DATE_ADD(B.create_date, INTERVAL 9 HOUR)) as date,
+					count(B.user_id) as male
+				FROM USER_PROFILE A LEFT JOIN BIRD_USER B 
+				ON A.user_id = B.user_id
+				WHERE A.gender = 'MALE'
+				AND
+				<![CDATA[
+					DATE_ADD(B.create_date, INTERVAL 9 HOUR) <= #{searchDate}						
+				]]>
+				GROUP BY YEARWEEK(DATE_ADD(B.create_date, INTERVAL 9 HOUR))
+				ORDER BY YEARWEEK(DATE_ADD(B.create_date, INTERVAL 9 HOUR)) DESC LIMIT 14
+				)TTT
+			ON TT.date = TTT.date
+	</select>
+	
+	<select id="monthlyMemberRegStatistics" parameterType="String" resultType="MemberStatisticsDto">
+		SELECT 
+			T.date, T.male, TT.female, TTT.total FROM
+				(
+				SELECT
+					substring(DATE_ADD(A.create_date, INTERVAL 9 HOUR),1,7) as date,
+					count(A.user_id) as male
+				FROM USER_PROFILE A LEFT JOIN BIRD_USER B 
+				ON A.user_id = B.user_id
+				WHERE A.gender = 'MALE'
+				AND substring(DATE_ADD(A.create_date, INTERVAL 9 HOUR),1,7) BETWEEN #{startMonth} AND #{endMonth}						
+				GROUP BY substring(DATE_ADD(A.create_date, INTERVAL 9 HOUR),1,7)
+				)T
+			LEFT OUTER JOIN
+				(
+				SELECT
+					substring(DATE_ADD(A.create_date, INTERVAL 9 HOUR),1,7) as date,
+					count(A.user_id) as female
+				FROM USER_PROFILE A LEFT JOIN BIRD_USER B 
+				ON A.user_id = B.user_id
+				WHERE A.gender = 'FEMALE'
+				AND substring(DATE_ADD(A.create_date, INTERVAL 9 HOUR),1,7) BETWEEN #{startMonth} AND #{endMonth}						
+				GROUP BY substring(DATE_ADD(A.create_date, INTERVAL 9 HOUR),1,7)
+				)TT
+			ON T.date = TT.date
+			LEFT OUTER JOIN
+				(
+				SELECT
+					substring(DATE_ADD(A.create_date, INTERVAL 9 HOUR),1,7) as date,
+					count(A.user_id) as total
+				FROM USER_PROFILE A LEFT JOIN BIRD_USER B 
+				ON A.user_id = B.user_id
+				WHERE substring(DATE_ADD(A.create_date, INTERVAL 9 HOUR),1,7) BETWEEN #{startMonth} AND #{endMonth}						
+				GROUP BY substring(DATE_ADD(A.create_date, INTERVAL 9 HOUR),1,7)
+				)TTT
+			ON TT.date = TTT.date
+	</select>
+	
+	<select id="yearMemberRegStatistics" parameterType="String" resultType="MemberStatisticsDto">
+		SELECT 
+			T.date, T.male, TT.female, TTT.total FROM
+				(
+				SELECT
+					substring(DATE_ADD(A.create_date, INTERVAL 9 HOUR),1,4) as date,
+					count(A.user_id) as male
+				FROM USER_PROFILE A LEFT JOIN BIRD_USER B 
+				ON A.user_id = B.user_id
+				WHERE A.gender = 'MALE'
+				<![CDATA[
+				AND substring(DATE_ADD(A.create_date, INTERVAL 9 HOUR),1,4) <= #{thisYear}
+				]]>
+				GROUP BY date
+				)T
+			LEFT OUTER JOIN
+				(
+				SELECT
+					substring(DATE_ADD(A.create_date, INTERVAL 9 HOUR),1,4) as date,
+					count(A.user_id) as female
+				FROM USER_PROFILE A LEFT JOIN BIRD_USER B 
+				ON A.user_id = B.user_id
+				WHERE A.gender = 'FEMALE'
+				<![CDATA[
+				AND substring(DATE_ADD(A.create_date, INTERVAL 9 HOUR),1,4) <= #{thisYear}
+				]]>						
+				GROUP BY date
+				)TT
+			ON T.date = TT.date
+			LEFT OUTER JOIN
+				(
+				SELECT
+					substring(DATE_ADD(A.create_date, INTERVAL 9 HOUR),1,4) as date,
+					count(A.user_id) as total
+				FROM USER_PROFILE A LEFT JOIN BIRD_USER B 
+				ON A.user_id = B.user_id
+				<![CDATA[
+				AND substring(DATE_ADD(A.create_date, INTERVAL 9 HOUR),1,4) <= #{thisYear}
+				]]>						
+				GROUP BY date
+				)TTT
+			ON TT.date = TTT.date
+	</select>
+	
+	<select id="arpuStatisticsByYear" parameterType="String" resultType="DateCountDto">
+		SELECT 
+			TT.date, IFNULL((TTT.cnt / TT.total ), 0) as cnt 
+		FROM
+			(                        
+			SELECT 
+				Z.date,
+				(IFNULL(ZZZ.male, 0) + IFNULL(ZZ.female, 0)) as total, 
+				IFNULL(ZZ.female, 0) as female, 
+				IFNULL(ZZZ.male, 0) as male
+            FROM
+            (
+                SELECT 
+                	T.date, count(distinct(T.user_id))as total FROM (
+                    SELECT
+						substring(DATE_ADD(A.create_date, INTERVAL 9 HOUR),1,7) as date,
+						A.user_id
+                    FROM AUTH_DATE_LOG A LEFT JOIN USER_PROFILE B
+                    ON A.user_id = B.user_id
+                    WHERE substring(DATE_ADD(A.create_date, INTERVAL 9 HOUR),1,4) = #{year}
+                  )T
+                GROUP BY T.date
+            )Z
+            LEFT OUTER JOIN
+            (
+           		SELECT 
+           			TT.date, count(distinct(TT.user_id))as female FROM (
+                    SELECT
+						substring(DATE_ADD(A.create_date, INTERVAL 9 HOUR),1,7) as date,
+						A.user_id
+                    FROM AUTH_DATE_LOG A LEFT JOIN USER_PROFILE B
+                    ON A.user_id = B.user_id
+                    WHERE B.gender='FEMALE'
+                    AND substring(DATE_ADD(A.create_date, INTERVAL 9 HOUR),1,4) = #{year}
+                  )TT
+                  GROUP BY TT.date
+            )ZZ
+            ON Z.date = ZZ.date
+            LEFT OUTER JOIN
+            (
+				SELECT TTT.date, count(distinct(TTT.user_id))as male FROM (
+                    SELECT
+                        substring(DATE_ADD(A.create_date, INTERVAL 9 HOUR),1,7) as date,
+                        A.user_id
+                    FROM AUTH_DATE_LOG A LEFT JOIN USER_PROFILE B
+                    ON A.user_id = B.user_id
+                    WHERE B.gender='MALE'
+                    AND substring(DATE_ADD(A.create_date, INTERVAL 9 HOUR),1,4) = #{year}
+                  )TTT
+				GROUP BY TTT.date
+				)ZZZ
+	            ON ZZ.date = ZZZ.date
+			)TT
+			LEFT JOIN 
+			(			
+				SELECT    
+					substring(DATE_ADD(A.create_date, INTERVAL 9 HOUR),1,7) as date,     
+					sum( 
+						CASE B.corn_count      
+						WHEN 10 THEN 1100      
+						WHEN 22 THEN 2200      
+						WHEN 55 THEN 5500      
+						WHEN 115 THEN 11000      
+						WHEN 240 THEN 22000      
+						WHEN 600 THEN 55000      
+						ELSE corn_count END     
+						) as cnt    
+				FROM CORN_BUY_LOG A, CORN_INFO B   
+				WHERE A.corn_idx = B.corn_idx  
+				AND substring(DATE_ADD(A.create_date, INTERVAL 9 HOUR),1,4) = #{year}
+				GROUP BY date  
+			 )TTT
+			 ON TT.date = TTT.date
+	</select>
+	
+	<select id="arpuStatistics" parameterType="String" resultType="DateCountDto">
+		SELECT 
+			TT.date, IFNULL((TTT.cnt / TT.total ), 0) as cnt 
+		FROM
+			(                        
+			SELECT 
+				Z.date,
+				(IFNULL(ZZZ.male, 0) + IFNULL(ZZ.female, 0)) as total, 
+				IFNULL(ZZ.female, 0) as female, 
+				IFNULL(ZZZ.male, 0) as male
+            FROM
+            (
+                SELECT 
+                	T.date, count(distinct(T.user_id))as total FROM (
+                    SELECT
+						substring(DATE_ADD(A.create_date, INTERVAL 9 HOUR),1,7) as date,
+						A.user_id
+                    FROM AUTH_DATE_LOG A LEFT JOIN USER_PROFILE B
+                    ON A.user_id = B.user_id
+                    WHERE substring(DATE_ADD(A.create_date, INTERVAL 9 HOUR),1,7) BETWEEN #{startMonth} AND #{endMonth}
+                  )T
+                GROUP BY T.date
+            )Z
+            LEFT OUTER JOIN
+            (
+           		SELECT 
+           			TT.date, count(distinct(TT.user_id))as female FROM (
+                    SELECT
+						substring(DATE_ADD(A.create_date, INTERVAL 9 HOUR),1,7) as date,
+						A.user_id
+                    FROM AUTH_DATE_LOG A LEFT JOIN USER_PROFILE B
+                    ON A.user_id = B.user_id
+                    WHERE B.gender='FEMALE'
+                    AND substring(DATE_ADD(A.create_date, INTERVAL 9 HOUR),1,7) BETWEEN #{startMonth} AND #{endMonth}
+                  )TT
+                  GROUP BY TT.date
+            )ZZ
+            ON Z.date = ZZ.date
+            LEFT OUTER JOIN
+            (
+				SELECT TTT.date, count(distinct(TTT.user_id))as male FROM (
+                    SELECT
+                        substring(DATE_ADD(A.create_date, INTERVAL 9 HOUR),1,7) as date,
+                        A.user_id
+                    FROM AUTH_DATE_LOG A LEFT JOIN USER_PROFILE B
+                    ON A.user_id = B.user_id
+                    WHERE B.gender='MALE'
+                    AND substring(DATE_ADD(A.create_date, INTERVAL 9 HOUR),1,7) BETWEEN #{startMonth} AND #{endMonth}
+                  )TTT
+				GROUP BY TTT.date
+				)ZZZ
+	            ON ZZ.date = ZZZ.date
+			)TT
+			LEFT JOIN 
+			(			
+				SELECT    
+					substring(DATE_ADD(A.create_date, INTERVAL 9 HOUR),1,7) as date,     
+					sum( 
+						CASE B.corn_count      
+						WHEN 10 THEN 1100      
+						WHEN 22 THEN 2200      
+						WHEN 55 THEN 5500      
+						WHEN 115 THEN 11000      
+						WHEN 240 THEN 22000      
+						WHEN 600 THEN 55000      
+						ELSE corn_count END     
+						) as cnt    
+				FROM CORN_BUY_LOG A, CORN_INFO B   
+				WHERE A.corn_idx = B.corn_idx  
+				AND substring(DATE_ADD(A.create_date, INTERVAL 9 HOUR),1,7) BETWEEN #{startMonth} AND #{endMonth}
+				GROUP BY date  
+			 )TTT
+			 ON TT.date = TTT.date
+	</select>
+	
+	<select id="arppuStatisticsByYear" parameterType="String" resultType="DateCountDto">
+		SELECT
+			substring(DATE_ADD(A.create_date, INTERVAL 9 HOUR),1,7) as date, 
+			sum(	CASE B.corn_count
+					WHEN 10 THEN 1100
+					WHEN 22 THEN 2200
+					WHEN 55 THEN 5500
+					WHEN 115 THEN 11000
+					WHEN 240 THEN 22000
+					WHEN 600 THEN 55000
+					ELSE corn_count END
+				) as cnt,
+			count(distinct(user_id)) as userCnt 
+		FROM CORN_BUY_LOG A, CORN_INFO B
+		WHERE A.corn_idx = B.corn_idx
+		AND substring(DATE_ADD(A.create_date, INTERVAL 9 HOUR),1,4) = #{year}
+		GROUP BY date
+	</select>
+	
+	<select id="arppuStatistics" parameterType="String" resultType="DateCountDto">
+		SELECT
+			substring(DATE_ADD(A.create_date, INTERVAL 9 HOUR),1,7) as date, 
+			sum(	CASE B.corn_count
+					WHEN 10 THEN 1100
+					WHEN 22 THEN 2200
+					WHEN 55 THEN 5500
+					WHEN 115 THEN 11000
+					WHEN 240 THEN 22000
+					WHEN 600 THEN 55000
+					ELSE corn_count END
+				) as cnt,
+			count(distinct(user_id)) as userCnt 
+		FROM CORN_BUY_LOG A, CORN_INFO B
+		WHERE A.corn_idx = B.corn_idx
+		AND substring(DATE_ADD(A.create_date, INTERVAL 9 HOUR),1,7) BETWEEN #{startMonth} AND #{endMonth}
+		GROUP BY date
+	</select>
+	
+	<select id="dailyLetterStatistics" parameterType="String" resultType="LetterStatisticsDto">
+		SELECT 
+			T.date, 
+			(IFNULL(T.privateLetterCnt,0) + IFNULL(TTT.privateLetterCnt2,0))  as privateLetterCnt, 
+			IFNULL(TT.openLetterCnt,0) as openLetterCnt,
+			((IFNULL(T.privateLetterCnt,0) + IFNULL(TTT.privateLetterCnt2,0)) + IFNULL(TT.openLetterCnt,0)) as total
+		FROM
+		(
+			SELECT
+				DATE(DATE_ADD(send_date, INTERVAL 9 HOUR)) as date,
+				count(letter_id) as privateLetterCnt
+			FROM PRIVATE_LETTER_LOG
+			WHERE
+			<![CDATA[
+				DATE(DATE_ADD(send_date, INTERVAL 9 HOUR)) <= #{date}
+			]]>
+			GROUP BY date
+			ORDER BY date DESC 
+			LIMIT 14
+		) T
+		LEFT OUTER JOIN
+		(
+			SELECT
+				DATE(DATE_ADD(create_date, INTERVAL 9 HOUR)) as date,
+				count(letter_id) as openLetterCnt
+			FROM OPEN_LETTER 
+			WHERE
+			<![CDATA[
+				DATE(DATE_ADD(create_date, INTERVAL 9 HOUR)) <= #{date}
+			]]>
+			AND OPEN_LETTER_TYPE != 'SEND_OTHER'
+			GROUP BY date
+			ORDER BY date DESC 
+			LIMIT 14
+		) TT
+		ON T.date = TT.date
+		LEFT OUTER JOIN
+		(
+			SELECT
+				DATE(DATE_ADD(create_date, INTERVAL 9 HOUR)) as date,
+				count(letter_id) as privateLetterCnt2
+			FROM OPEN_LETTER 
+			WHERE
+			<![CDATA[
+				DATE(DATE_ADD(create_date, INTERVAL 9 HOUR)) <= #{date}
+			]]>
+			AND OPEN_LETTER_TYPE = 'SEND_OTHER'
+			GROUP BY date
+			ORDER BY date DESC 
+			LIMIT 14
+		) TTT
+		ON TT.date = TTT.date
+	</select>
+	
+	<select id="weeklyLetterStatistics" parameterType="String" resultType="LetterStatisticsDto">
+		SELECT 
+			T.date, 
+			(IFNULL(T.privateLetterCnt,0) + IFNULL(TTT.privateLetterCnt2,0))  as privateLetterCnt, 
+			IFNULL(TT.openLetterCnt,0) as openLetterCnt,
+			((IFNULL(T.privateLetterCnt,0) + IFNULL(TTT.privateLetterCnt2,0)) + IFNULL(TT.openLetterCnt,0)) as total
+		FROM
+		(
+			SELECT
+				WEEK(DATE_ADD(send_date, INTERVAL 9 HOUR)) as date,
+				count(letter_id) as privateLetterCnt
+			FROM PRIVATE_LETTER_LOG
+			WHERE
+			<![CDATA[
+				DATE(DATE_ADD(send_date, INTERVAL 9 HOUR)) <= #{date}
+			]]>
+			GROUP BY YEARWEEK(DATE_ADD(send_date, INTERVAL 9 HOUR))
+			ORDER BY YEARWEEK(DATE_ADD(send_date, INTERVAL 9 HOUR)) DESC LIMIT 14
+			LIMIT 14
+		) T
+		LEFT OUTER JOIN
+		(
+			SELECT
+				WEEK(DATE_ADD(create_date, INTERVAL 9 HOUR)) as date,
+				count(letter_id) as openLetterCnt
+			FROM OPEN_LETTER
+			WHERE
+			<![CDATA[
+				DATE(DATE_ADD(create_date, INTERVAL 9 HOUR)) <= #{date}
+			]]>
+			AND OPEN_LETTER_TYPE != 'SEND_OTHER'
+			GROUP BY YEARWEEK(DATE_ADD(create_date, INTERVAL 9 HOUR))
+			ORDER BY YEARWEEK(DATE_ADD(create_date, INTERVAL 9 HOUR)) DESC LIMIT 14 
+			LIMIT 14
+		) TT
+		ON T.date = TT.date
+		LEFT OUTER JOIN
+		(
+			SELECT
+				WEEK(DATE_ADD(create_date, INTERVAL 9 HOUR)) as date,
+				count(letter_id) as privateLetterCnt2
+			FROM OPEN_LETTER
+			WHERE
+			<![CDATA[
+				DATE(DATE_ADD(create_date, INTERVAL 9 HOUR)) <= #{date}
+			]]>
+			AND OPEN_LETTER_TYPE = 'SEND_OTHER'
+			GROUP BY YEARWEEK(DATE_ADD(create_date, INTERVAL 9 HOUR))
+			ORDER BY YEARWEEK(DATE_ADD(create_date, INTERVAL 9 HOUR)) DESC LIMIT 14
+			LIMIT 14
+		) TTT
+		ON TT.date = TTT.date
+	</select>
+	
+	<select id="monthlyLetterStatistics" parameterType="String" resultType="LetterStatisticsDto">
+		SELECT 
+			T.date, 
+			(IFNULL(TT.privateLetterCnt,0) + IFNULL(TTT.privateLetterCnt2,0))  as privateLetterCnt, 
+			IFNULL(T.openLetterCnt,0) as openLetterCnt,
+			((IFNULL(TT.privateLetterCnt,0) + IFNULL(TTT.privateLetterCnt2,0)) + IFNULL(T.openLetterCnt,0)) as total
+		FROM
+		(
+			SELECT
+				substring(DATE_ADD(create_date, INTERVAL 9 HOUR), 1, 7) as date,
+				count(letter_id) as openLetterCnt
+			FROM OPEN_LETTER
+			WHERE OPEN_LETTER_TYPE != 'SEND_OTHER'
+			AND substring(DATE_ADD(create_date, INTERVAL 9 HOUR), 1, 7) BETWEEN #{startMonth} AND #{endMonth}
+			GROUP BY substring(DATE_ADD(create_date, INTERVAL 9 HOUR), 1, 7)
+			LIMIT 14
+		) T
+		LEFT OUTER JOIN
+		(
+			SELECT
+				substring(DATE_ADD(send_date, INTERVAL 9 HOUR), 1, 7) as date,
+				count(letter_id) as privateLetterCnt
+			FROM PRIVATE_LETTER_LOG
+			WHERE substring(DATE_ADD(send_date, INTERVAL 9 HOUR),1, 7) BETWEEN #{startMonth} AND #{endMonth}
+			GROUP BY substring(DATE_ADD(send_date, INTERVAL 9 HOUR),1, 7)
+			LIMIT 14	
+		) TT
+		ON T.date = TT.date
+		LEFT OUTER JOIN
+		(
+			SELECT
+				substring(DATE_ADD(create_date, INTERVAL 9 HOUR), 1, 7) as date,
+				count(letter_id) as privateLetterCnt2
+			FROM OPEN_LETTER
+			WHERE OPEN_LETTER_TYPE = 'SEND_OTHER'
+			AND substring(DATE_ADD(create_date, INTERVAL 9 HOUR), 1, 7) BETWEEN #{startMonth} AND #{endMonth}
+			GROUP BY substring(DATE_ADD(create_date, INTERVAL 9 HOUR), 1, 7)
+			LIMIT 14
+		) TTT
+		ON TT.date = TTT.date
+	</select>
+	
+	<select id="yearLetterStatistics" parameterType="String" resultType="LetterStatisticsDto">
+		SELECT 
+			T.date, 
+			(IFNULL(T.privateLetterCnt,0) + IFNULL(TTT.privateLetterCnt2,0))  as privateLetterCnt, 
+			IFNULL(TT.openLetterCnt,0) as openLetterCnt,
+			((IFNULL(T.privateLetterCnt,0) + IFNULL(TTT.privateLetterCnt2,0)) + IFNULL(TT.openLetterCnt,0)) as total
+		FROM
+		(
+			SELECT
+				substring(DATE_ADD(send_date, INTERVAL 9 HOUR), 1, 4) as date,
+				count(letter_id) as privateLetterCnt
+			FROM PRIVATE_LETTER_LOG
+			<![CDATA[
+				WHERE substring(DATE_ADD(send_date, INTERVAL 9 HOUR),1, 4) <= #{thisYear}
+			]]>
+			GROUP BY date 
+		) T
+		LEFT OUTER JOIN
+		(
+			SELECT
+				substring(DATE_ADD(create_date, INTERVAL 9 HOUR), 1, 4) as date,
+				count(letter_id) as openLetterCnt
+			FROM OPEN_LETTER
+			WHERE OPEN_LETTER_TYPE != 'SEND_OTHER'
+			<![CDATA[
+				AND substring(DATE_ADD(create_date, INTERVAL 9 HOUR), 1, 4) <= #{thisYear}
+			]]>
+			GROUP BY date 
+		) TT
+		ON T.date = TT.date
+		LEFT OUTER JOIN
+		(
+			SELECT
+				substring(DATE_ADD(create_date, INTERVAL 9 HOUR), 1, 4) as date,
+				count(letter_id) as privateLetterCnt2
+			FROM OPEN_LETTER
+			WHERE OPEN_LETTER_TYPE = 'SEND_OTHER'
+			<![CDATA[
+				AND substring(DATE_ADD(create_date, INTERVAL 9 HOUR), 1, 4) <= #{thisYear}
+			]]>
+			GROUP BY date 
+		) TTT
+		ON TT.date = TTT.date
+	</select>
+	
+	<select id="dailyDauStatistics" parameterType="String" resultType="MemberStatisticsDto">
+		SELECT 
+			TT.date, 
+			(IFNULL(TTT.male, 0) + IFNULL(TT.female, 0)) as total, 
+			IFNULL(TT.female, 0) as female, 
+			IFNULL(TTT.male, 0) as male
+		FROM
+		(
+			SELECT
+				DATE(DATE_ADD(A.create_date, INTERVAL 9 HOUR)) as date,
+				count(distinct A.user_id) as female
+			FROM AUTH_DATE_LOG A LEFT JOIN USER_PROFILE B 
+			ON A.user_id = B.user_id
+			WHERE B.gender='FEMALE'
+			AND DATE(DATE_ADD(A.create_date, INTERVAL 9 HOUR)) BETWEEN #{startDate} AND #{today}
+			GROUP BY date
+			ORDER BY date DESC 
+		)TT
+		LEFT OUTER JOIN
+		(
+			SELECT
+				DATE(DATE_ADD(A.create_date, INTERVAL 9 HOUR)) as date,
+				count(distinct A.user_id) as male
+			FROM AUTH_DATE_LOG A LEFT JOIN USER_PROFILE B
+			ON A.user_id = B.user_id
+			WHERE B.gender='MALE'
+			AND DATE(DATE_ADD(A.create_date, INTERVAL 9 HOUR)) BETWEEN #{startDate} AND #{today}
+			GROUP BY date
+			ORDER BY date DESC 
+		)TTT
+		ON TT.date = TTT.date
+		ORDER BY TT.date DESC
+	</select>
+	
+	<select id="weeklyDauStatistics" parameterType="String" resultType="MemberStatisticsDto">
+		SELECT 
+			T.date, 
+			IFNULL(T.total, 0) as total, 
+			IFNULL(TT.female, 0) as female, 
+			IFNULL(TTT.male, 0) as male
+		FROM
+		(
+			SELECT
+				WEEK(DATE_ADD(A.create_date, INTERVAL 9 HOUR)) as date,
+				count(distinct A.user_id) as total
+			FROM AUTH_DATE_LOG A LEFT JOIN USER_PROFILE B 
+			ON A.user_id = B.user_id
+			WHERE
+			<![CDATA[
+				DATE(DATE_ADD(A.create_date, INTERVAL 9 HOUR)) <= #{searchDate}
+			]]>				
+			GROUP BY YEARWEEK(DATE_ADD(A.create_date, INTERVAL 9 HOUR))
+			ORDER BY YEARWEEK(DATE_ADD(A.create_date, INTERVAL 9 HOUR)) DESC LIMIT 14 
+		)T
+		LEFT OUTER JOIN
+		(
+			SELECT
+				WEEK(DATE_ADD(A.create_date, INTERVAL 9 HOUR)) as date,
+				count(distinct A.user_id) as female
+			FROM AUTH_DATE_LOG A LEFT JOIN USER_PROFILE B 
+			ON A.user_id = B.user_id
+			WHERE B.gender='FEMALE'
+			AND
+			<![CDATA[
+				DATE(DATE_ADD(A.create_date, INTERVAL 9 HOUR)) <= #{searchDate}
+			]]>				
+			GROUP BY YEARWEEK(DATE_ADD(A.create_date, INTERVAL 9 HOUR))
+			ORDER BY YEARWEEK(DATE_ADD(A.create_date, INTERVAL 9 HOUR)) DESC LIMIT 14 
+		)TT
+		ON T.date = TT.date
+		LEFT OUTER JOIN
+		(
+			SELECT
+				WEEK(DATE_ADD(A.create_date, INTERVAL 9 HOUR)) as date,
+				count(distinct A.user_id) as male
+			FROM AUTH_DATE_LOG A LEFT JOIN USER_PROFILE B
+			ON A.user_id = B.user_id
+			WHERE B.gender='MALE'
+			AND
+			<![CDATA[
+				DATE(DATE_ADD(A.create_date, INTERVAL 9 HOUR)) <= #{searchDate}
+			]]>		
+			GROUP BY YEARWEEK(DATE_ADD(A.create_date, INTERVAL 9 HOUR))
+			ORDER BY YEARWEEK(DATE_ADD(A.create_date, INTERVAL 9 HOUR)) DESC LIMIT 14
+		)TTT
+		ON TT.date = TTT.date
+	</select>
+	
+	<select id="monthlyDauStatistics" parameterType="String" resultType="MemberStatisticsDto">
+		SELECT 
+			T.date, 
+			IFNULL(T.total, 0) as total, 
+			IFNULL(TT.female, 0) as female, 
+			IFNULL(TTT.male, 0) as male
+		FROM
+		(
+			SELECT
+				substring(DATE_ADD(A.create_date, INTERVAL 9 HOUR),1 ,7) as date,
+				count(distinct A.user_id) as total
+			FROM AUTH_DATE_LOG A LEFT JOIN USER_PROFILE B 
+			ON A.user_id = B.user_id
+			WHERE substring(DATE_ADD(A.create_date, INTERVAL 9 HOUR),1,7) BETWEEN #{startMonth} AND #{endMonth}	
+			GROUP BY substring(DATE_ADD(A.create_date, INTERVAL 9 HOUR),1,7)
+		)T
+		LEFT OUTER JOIN
+		(
+			SELECT
+				substring(DATE_ADD(A.create_date, INTERVAL 9 HOUR),1,7) as date,
+				count(distinct A.user_id) as female
+			FROM AUTH_DATE_LOG A LEFT JOIN USER_PROFILE B 
+			ON A.user_id = B.user_id
+			WHERE B.gender='FEMALE'
+			AND substring(DATE_ADD(A.create_date, INTERVAL 9 HOUR),1,7) BETWEEN #{startMonth} AND #{endMonth}	
+			GROUP BY substring(DATE_ADD(A.create_date, INTERVAL 9 HOUR),1,7)
+		)TT
+		ON T.date = TT.date
+		LEFT OUTER JOIN
+		(
+			SELECT
+				substring(DATE_ADD(A.create_date, INTERVAL 9 HOUR),1,7) as date,
+				count(distinct A.user_id) as male
+			FROM AUTH_DATE_LOG A LEFT JOIN USER_PROFILE B
+			ON A.user_id = B.user_id
+			WHERE B.gender='MALE'
+			AND substring(DATE_ADD(A.create_date, INTERVAL 9 HOUR),1,7) BETWEEN #{startMonth} AND #{endMonth}
+			GROUP BY substring(DATE_ADD(A.create_date, INTERVAL 9 HOUR),1,7)
+		)TTT
+		ON TT.date = TTT.date
+	</select>
+	
+	<select id="yearDauStatistics" parameterType="String" resultType="MemberStatisticsDto">
+		SELECT 
+			T.date, 
+			IFNULL(T.total, 0) as total, 
+			IFNULL(TT.female, 0) as female, 
+			IFNULL(TTT.male, 0) as male
+		FROM
+		(
+			SELECT
+				substring(DATE_ADD(A.create_date, INTERVAL 9 HOUR),1 ,4) as date,
+				count(distinct A.user_id) as total
+			FROM AUTH_DATE_LOG A LEFT JOIN USER_PROFILE B 
+			ON A.user_id = B.user_id
+			<![CDATA[
+				WHERE substring(DATE_ADD(A.create_date, INTERVAL 9 HOUR),1,4) <= #{thisYear}
+			]]>
+			GROUP BY substring(DATE_ADD(A.create_date, INTERVAL 9 HOUR),1,4)
+		)T
+		LEFT OUTER JOIN
+		(
+			SELECT
+				substring(DATE_ADD(A.create_date, INTERVAL 9 HOUR),1,4) as date,
+				count(distinct A.user_id) as female
+			FROM AUTH_DATE_LOG A LEFT JOIN USER_PROFILE B 
+			ON A.user_id = B.user_id
+			WHERE B.gender='FEMALE'
+			<![CDATA[
+				AND substring(DATE_ADD(A.create_date, INTERVAL 9 HOUR),1,4) <= #{thisYear}
+			]]>
+			GROUP BY substring(DATE_ADD(A.create_date, INTERVAL 9 HOUR),1,4)
+		)TT
+		ON T.date = TT.date
+		LEFT OUTER JOIN
+		(
+			SELECT
+				substring(DATE_ADD(A.create_date, INTERVAL 9 HOUR),1,4) as date,
+				count(distinct A.user_id) as male
+			FROM AUTH_DATE_LOG A LEFT JOIN USER_PROFILE B
+			ON A.user_id = B.user_id
+			WHERE B.gender='MALE'
+			<![CDATA[
+				AND substring(DATE_ADD(A.create_date, INTERVAL 9 HOUR),1,4) <= #{thisYear}
+			]]>
+			GROUP BY substring(DATE_ADD(A.create_date, INTERVAL 9 HOUR),1,4)
+		)TTT
+		ON TT.date = TTT.date
+	</select>
+	
+	<select id="mauStatisticsByYear" parameterType="String" resultType="MemberStatisticsDto">
+		SELECT 
+			Z.date, 
+			IFNULL(Z.total, 0) as total, 
+			IFNULL(ZZ.female, 0) as female, 
+			IFNULL(ZZZ.male, 0) as male
+		FROM
+		(
+		select T.date, count(distinct(T.user_id))as total FROM (
+	        SELECT substring(DATE_ADD(A.create_date, INTERVAL 9 HOUR),1,7) as date, A.user_id
+			FROM AUTH_DATE_LOG A LEFT JOIN USER_PROFILE B
+			ON A.user_id = B.user_id
+			WHERE substring(DATE_ADD(A.create_date, INTERVAL 9 HOUR),1,4) = #{year}
+			)T
+	    GROUP BY T.date
+		)Z
+		LEFT OUTER JOIN
+		(
+		select TT.date, count(distinct(TT.user_id))as female FROM (
+       		SELECT
+				substring(DATE_ADD(A.create_date, INTERVAL 9 HOUR),1,7) as date, A.user_id
+			FROM AUTH_DATE_LOG A LEFT JOIN USER_PROFILE B
+			ON A.user_id = B.user_id
+			WHERE B.gender='FEMALE'
+			AND substring(DATE_ADD(A.create_date, INTERVAL 9 HOUR),1,4) = #{year}
+			)TT
+			GROUP BY TT.date
+		)ZZ
+		ON Z.date = ZZ.date
+		LEFT OUTER JOIN
+		(
+	    select TTT.date, count(distinct(TTT.user_id))as male FROM (
+	        SELECT
+				substring(DATE_ADD(A.create_date, INTERVAL 9 HOUR),1,7) as date, A.user_id
+			FROM AUTH_DATE_LOG A LEFT JOIN USER_PROFILE B
+			ON A.user_id = B.user_id
+			WHERE B.gender='MALE'
+			AND substring(DATE_ADD(A.create_date, INTERVAL 9 HOUR),1,4) = #{year}
+	      )TTT
+		GROUP BY TTT.date
+		)ZZZ
+		ON ZZ.date = ZZZ.date
+	</select>
+	<select id="mauStatistics" parameterType="String" resultType="MemberStatisticsDto">
+		SELECT 
+			Z.date,
+			(IFNULL(ZZZ.male, 0) + IFNULL(ZZ.female, 0)) as total, 
+			IFNULL(ZZ.female, 0) as female, 
+			IFNULL(ZZZ.male, 0) as male
+		FROM
+		(
+		    select T.date, count(distinct(T.user_id))as total FROM (
+		        SELECT
+				substring(DATE_ADD(A.create_date, INTERVAL 9 HOUR),1,7) as date,
+				A.user_id
+			FROM AUTH_DATE_LOG A LEFT JOIN USER_PROFILE B
+			ON A.user_id = B.user_id
+			WHERE substring(DATE_ADD(A.create_date, INTERVAL 9 HOUR),1,7) BETWEEN #{startMonth} AND #{endMonth}
+		      )T
+		    GROUP BY T.date
+		)Z
+		LEFT OUTER JOIN
+		(
+	       select TT.date, count(distinct(TT.user_id))as female FROM (
+		        SELECT
+				substring(DATE_ADD(A.create_date, INTERVAL 9 HOUR),1,7) as date,
+				A.user_id
+			FROM AUTH_DATE_LOG A LEFT JOIN USER_PROFILE B
+			ON A.user_id = B.user_id
+			WHERE B.gender='FEMALE'
+			AND substring(DATE_ADD(A.create_date, INTERVAL 9 HOUR),1,7) BETWEEN #{startMonth} AND #{endMonth}
+		      )TT
+	      GROUP BY TT.date
+		)ZZ
+		ON Z.date = ZZ.date
+		LEFT OUTER JOIN
+		(
+		    select TTT.date, count(distinct(TTT.user_id))as male FROM (
+	        SELECT
+			substring(DATE_ADD(A.create_date, INTERVAL 9 HOUR),1,7) as date,
+			A.user_id
+		FROM AUTH_DATE_LOG A LEFT JOIN USER_PROFILE B
+		ON A.user_id = B.user_id
+		WHERE B.gender='MALE'
+		AND substring(DATE_ADD(A.create_date, INTERVAL 9 HOUR),1,7) BETWEEN #{startMonth} AND #{endMonth}
+	      )TTT
+		   GROUP BY TTT.date
+		)ZZZ
+	ON ZZ.date = ZZZ.date
+	</select>
+	
+	<select id="authStatisticsByAge" parameterType="Map" resultType="AuthStatisticsDto">
+		SELECT
+			LEFT((YEAR(NOW()) - SUBSTRING(B.birth_day,1,4)),1) as age,
+			COUNT(A.user_id) as cnt
+		FROM AUTH_DATE_LOG A RIGHT JOIN USER_PROFILE B
+		ON A.user_id = B.user_id
+		<where>
+			<if test="type == 'daily'">
+				(DATE_ADD(A.create_date, INTERVAL 9 HOUR)) BETWEEN #{start} AND #{end}
+			</if>
+			<if test="type == 'weekly'">
+				WEEK(DATE_ADD(A.create_date, INTERVAL 9 HOUR)) = #{week}
+			</if>
+			<if test="type == 'monthly'">
+				(DATE_ADD(A.create_date, INTERVAL 9 HOUR)) LIKE CONCAT(#{month},'%')
+			</if>
+			<if test="type == 'year'">
+				(DATE_ADD(A.create_date, INTERVAL 9 HOUR)) LIKE CONCAT(#{year},'%')
+			</if>
+		</where>
+		GROUP BY LEFT((YEAR(NOW()) - SUBSTRING(B.birth_day,1,4)),1) 
+		LIMIT 7
+	</select>
+	
+	<select id="dormantUserStatistics" parameterType="Map" resultType="DormantUserDto">
+		SELECT * 
+			FROM (        
+	                SELECT 
+						@ROWNUM:=@ROWNUM+1 AS ROWNUM, T.*
+					FROM (
+					      	SELECT A.user_id, B.user_name, IF(B.gender='MALE','남성','여성') as gender, 
+					      			((TO_DAYS(now())-(TO_DAYS(B.birth_day)))/365)+1 as birth_day,
+			      					A.create_date, (A.create_date) as create_date2
+					      	FROM BIRD_USER A LEFT JOIN USER_PROFILE B
+							ON A.user_id = B.user_id
+							WHERE A.user_status = 'NORMAL'
+							AND A.user_id NOT IN 
+							(
+								SELECT user_id 
+								FROM AUTH_DATE_LOG
+								WHERE DATE(DATE_ADD(create_date, INTERVAL 9 HOUR)) BETWEEN DATE(DATE_ADD(#{searchDate}, INTERVAL 9 HOUR)) AND DATE(DATE_ADD(DATE_ADD(#{searchDate}, INTERVAL 9 HOUR), INTERVAL #{dayCount} day))
+								GROUP BY user_id
+							)
+							<![CDATA[
+								AND A.create_date < DATE(DATE_ADD(#{searchDate}, INTERVAL 9 HOUR))
+							]]>
+					)T,(SELECT @ROWNUM:=0) TT
+				)Z
+			<where>
+				<if test="start != ''">
+					Z.ROWNUM BETWEEN #{start} AND #{end}	
+				</if>
+			</where>
+	</select>
+	
+	<select id="dormantUserStatisticsCnt" resultType="Integer">
+		SELECT count(A.user_id) as cnt
+      	FROM BIRD_USER A LEFT JOIN USER_PROFILE B
+		ON A.user_id = B.user_id
+		WHERE A.user_status = 'NORMAL'
+		AND A.user_id NOT IN 
+		(
+			SELECT user_id 
+			FROM AUTH_DATE_LOG
+			WHERE DATE(DATE_ADD(create_date, INTERVAL 9 HOUR)) 
+				BETWEEN DATE(DATE_ADD(#{searchDate}, INTERVAL 9 HOUR)) 
+				AND DATE(DATE_ADD(DATE_ADD(#{searchDate}, INTERVAL 9 HOUR), INTERVAL #{dayCount} day))
+			GROUP BY user_id
+		)
+		<![CDATA[
+			AND A.create_date < DATE(DATE_ADD(#{searchDate}, INTERVAL 9 HOUR))
+		]]> 
+	</select>
+	
+	
+	<select id="dauRetension" resultType="Map">
+		SELECT A.date, A.cnt from
+		(
+			SELECT count(distinct A.user_id) as cnt, 
+				   DATE(DATE_ADD(A.create_date, INTERVAL 9 HOUR)) as date
+			FROM AUTH_DATE_LOG A LEFT JOIN USER_PROFILE B ON A.user_id = B.user_id
+			WHERE DATE(DATE_ADD(A.create_date, INTERVAL 9 HOUR)) 
+			BETWEEN #{day} AND DATE(DATE_ADD(#{day}, INTERVAL #{interval} DAY))
+			AND A.user_id IN (
+					SELECT distinct user_id 
+					FROM AUTH_DATE_LOG 
+					WHERE DATE(DATE_ADD(create_date, INTERVAL 9 HOUR)) = #{day} 
+					ORDER BY user_id ASC
+			)
+			GROUP BY date
+		)A
+	</select>
+	
+	<select id="regRetension" resultType="Map">
+		SELECT DATE(DATE_ADD(create_date, INTERVAL 9 HOUR)) AS date, 
+			   COUNT(DISTINCT user_id) as cnt
+		FROM AUTH_DATE_LOG 
+		WHERE DATE(DATE_ADD(create_date, INTERVAL 9 HOUR)) 
+		BETWEEN #{day} AND DATE(DATE_ADD(#{day}, INTERVAL #{interval} DAY))
+		AND user_id IN (
+				SELECT DISTINCT user_id 
+				FROM BIRD_USER 
+				WHERE DATE(DATE_ADD(create_date, INTERVAL 9 HOUR)) = #{day} 
+				ORDER BY user_id ASC
+		)
+		GROUP BY date
+	</select>
+	
+</mapper>

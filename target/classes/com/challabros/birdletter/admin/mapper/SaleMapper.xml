@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.challabros.birdletter.admin.mapper.SaleMapper">
+
+<select id="totalCornSaleList" parameterType="Map" resultType="CornSaleListDto">
+	SELECT * 
+			FROM (
+				SELECT @ROWNUM:=@ROWNUM+1 AS ROWNUM, A.*
+				FROM (
+					SELECT
+						DATE_ADD(A.create_date, INTERVAL 9 HOUR) AS create_date,
+						A.user_id,
+						C.user_name,
+						(SELECT phone_number FROM BIRD_USER WHERE user_id = A.user_id) AS phone_number,
+						SUM(B.corn_count) AS cornPoint
+					FROM CORN_BUY_LOG A LEFT JOIN CORN_INFO B
+					ON A.corn_idx = B.corn_idx LEFT JOIN USER_PROFILE C
+					ON A.user_id = C.user_id
+					<if test="startDate != '' and endDate != ''">
+						WHERE A.create_date BETWEEN #{startDate} AND #{endDate}
+					</if>
+					GROUP BY create_date
+					order by create_date desc
+				) A,
+				(SELECT @ROWNUM:=0) R
+			) Z
+	<if test="start > 0">
+		WHERE Z.ROWNUM BETWEEN #{start}
+	</if>
+	<if test="end > 0">
+		AND #{end}
+	</if>
+</select>
+
+<select id="totalCornSaleListCnt" resultType="Map">
+	SELECT
+		COUNT(T.user_id) AS cnt,
+		sum(T.popcornPoint) as popcornPoint
+	FROM
+		(
+			SELECT A.*, sum(B.popcorn_point) as popcornPoint
+			FROM POPCORN_BUY_LOG A LEFT JOIN POPCORN_INFO B
+			ON A.popcorn_idx = B.popcorn_idx
+			WHERE A.create_date BETWEEN #{startDate} AND #{endDate}
+			GROUP BY A.create_date
+		)T
+</select>
+
+<select id="getSumCornSale" resultType="Map">
+	SELECT
+		SUM(
+				CASE corn_count
+				WHEN 10 THEN 1100
+				WHEN 22 THEN 2200
+				WHEN 55 THEN 5500
+				WHEN 115 THEN 11000
+				WHEN 240 THEN 22000
+				WHEN 600 THEN 55000
+				ELSE corn_count END
+			) as cornCount,
+		COUNT(A.idx) as cnt
+	FROM
+		CORN_BUY_LOG A LEFT JOIN CORN_INFO B
+		ON A.corn_idx = B.corn_idx
+</select>
+
+<select id="countCornBuyLog" resultType="Integer">
+	SELECT COUNT(idx) as CNT
+	FROM CORN_BUY_LOG
+	<if test="startDate !='' and endDate != ''">
+		WHERE DATE_ADD(create_date, INTERVAL 9 HOUR) BETWEEN #{startDate} AND #{endDate}
+	</if>
+</select>
+
+<select id="itemBuyRank" resultType="ItemBuyRankDto">
+	SELECT *
+			FROM (
+				SELECT @ROWNUM:=@ROWNUM+1 AS ROWNUM, A.*
+			    FROM(
+					SELECT bl.productCode, pl.productName, pl.itemCategory, 
+						   pl.itemType, count(bl.idx) as cnt 
+					FROM USER_PRODUCT_BUY_LOG bl, PRODUCT_LIST pl
+					WHERE bl.productCode = pl.productCode
+			        GROUP BY bl.productCode
+					ORDER BY cnt DESC
+			        )A,
+			        (SELECT @ROWNUM:=0)R
+			)Z
+	<if test="start > 0 and end > 0">
+		WHERE Z.ROWNUM BETWEEN #{start} AND #{end}
+	</if> 
+	<if test="productName != ''">
+		AND Z.productName LIKE CONCAT('%',#{productName},'%')
+	</if>
+</select>
+
+<select id="itemBuyRankCnt" resultType="Integer">
+	SELECT count(Z.user_id) as CNT 
+	FROM (
+	  SELECT bl.user_id, pl.productName
+	  FROM USER_PRODUCT_BUY_LOG bl, PRODUCT_LIST pl
+	  WHERE bl.productCode = pl.productCode
+	  GROUP BY bl.productCode
+	)Z
+	<if test="productName != ''">
+		WHERE Z.productName LIKE CONCAT('%',#{productName},'%')
+	</if>
+</select>
+
+</mapper>

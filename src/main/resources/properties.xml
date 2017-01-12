@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!--
+  ~ Copyright(c) 2015 BirdLetter. All rights reserved.
+  ~ This software is the proprietary information of BirdLetter.
+  -->
+
+<!--
+    EX) @Value("#{code['code.response.error']}") in SpEL
+    <property name="driverClassName" value="#{config['key']}"> in *.xml
+-->
+<!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">
+<properties>
+    <comment>properties</comment>
+    <entry key="admin.db.url">${admin.db.url}</entry>
+    <entry key="admin.db.username">${admin.db.username}</entry>
+    <entry key="admin.db.password">${admin.db.password}</entry>
+    
+    <entry key="push.db.url">${push.db.url}</entry>
+    <entry key="push.db.username">${push.db.username}</entry>
+    <entry key="push.db.password">${push.db.password}</entry>
+    
+    <entry key="version.db.url">${version.db.url}</entry>
+    <entry key="version.db.username">${version.db.username}</entry>
+    <entry key="version.db.password">${version.db.password}</entry>
+    
+    <entry key="logger.root">${logger.root}</entry>
+    <entry key="logger.level">${logger.level}</entry>
+    <entry key="logger.name">${logger.name}</entry>
+    
+    <entry key="service.isQuartzUseCheck">${service.isQuartzUseCheck}</entry>
+    
+    <entry key="google.email.username">${google.email.username}</entry>
+    <entry key="google.email.password">${google.email.password}</entry>
+    <!-- 
+    <entry key="db.url">jdbc:mysql://192.168.0.30:3306/birdletter_db_v102</entry>
+    <entry key="db.password">qmfhtmqjemaos</entry>
+    <entry key="db.username">root</entry>
+     -->
+</properties>

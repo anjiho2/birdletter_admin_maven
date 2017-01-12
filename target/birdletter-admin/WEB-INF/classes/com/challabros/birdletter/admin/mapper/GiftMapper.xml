@@ -1,0 +1,308 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.challabros.birdletter.admin.mapper.GiftMapper">
+
+	<insert id="insertGiftBoxList" parameterType="list">
+		INSERT INTO 
+			GIFT_BOX_LIST
+			(
+				user_id,
+				gift_title,
+				gift_type,
+				product_code,
+				coin_count,
+				expire_date
+			)
+			VALUES
+			<foreach collection="list" item="values" separator=",">
+			(
+				#{values.userId}
+			   ,#{values.giftTitle}
+			   ,#{values.giftType}
+			   ,#{values.productCode}
+			   ,#{values.coinCount}
+			   ,date_add(now(), interval + #{values.expireDayCount} day)
+			)
+			</foreach>
+	</insert>
+	
+	<select id="presentCountList" resultType="Map">
+		SELECT
+			count(idx) as total_cnt,
+			(SELECT count(idx) as cnt2 FROM GIFT_BOX_LIST WHERE gift_state != 1) as close_cnt,
+			(SELECT count(idx) as cnt2 from GIFT_BOX_LIST WHERE gift_state = 1) as open_cnt
+		FROM GIFT_BOX_LIST
+	</select>
+	
+	<select id="presentList" resultType="GiftBoxListDomainDto">
+		SELECT * 
+			FROM (
+				SELECT 
+					@ROWNUM:=@ROWNUM+1 as ROWNUM, E.*
+				FROM (
+						SELECT  
+							A.idx, 
+							DATE_ADD(A.create_date, INTERVAL 9 HOUR) as create_date, 
+							DATE_ADD(A.expire_date, INTERVAL 9 HOUR) as expire_date,
+							A.gift_title, C.phone_number, 
+							B.user_name, B.birth_day, B.gender, 
+							A.gift_state, A.gift_type, A.coin_count,
+							DATE_ADD(A.receive_date, INTERVAL 9 HOUR) as receive_date,
+							(SELECT productName FROM PRODUCT_LIST WHERE itemCode = A.product_code COLLATE utf8mb4_general_ci) as product_name
+						FROM GIFT_BOX_LIST A LEFT JOIN USER_PROFILE B 
+						ON A.user_id = B.user_id LEFT JOIN BIRD_USER C
+						ON B.user_id = C.user_id
+						WHERE C.user_status = 'NORMAL'
+						<if test="startDate != ''">
+							AND A.create_date BETWEEN #{startDate} AND #{endDate} 
+						</if>
+						<if test="searchType == 'userName'">
+							AND B.user_name = #{searchValue}
+						</if>
+						<if test="searchType == 'phoneNumber'">
+							AND C.phone_number = #{searchValue}
+						</if>
+						ORDER BY create_date DESC
+					) E, (SELECT @ROWNUM:=0)R
+			)Z
+		WHERE Z.ROWNUM BETWEEN #{start} AND #{end}
+	</select>
+	
+	<select id="presentListCnt" resultType="Integer">
+		SELECT count(A.idx) as cnt
+		FROM GIFT_BOX_LIST A LEFT JOIN USER_PROFILE B 
+		ON A.user_id = B.user_id LEFT JOIN BIRD_USER C
+		ON B.user_id = C.user_id
+		WHERE C.user_status = 'NORMAL'
+		<if test="startDate != ''">
+			AND A.create_date BETWEEN #{startDate} AND #{endDate}
+		</if>
+		<if test="searchType == 'userName'">
+			AND B.user_name = #{searchValue}
+		</if>
+		<if test="searchType == 'phoneNumber'">
+			AND C.phone_number = #{searchValue}
+		</if>
+	</select>
+	
+	<update id="updateGiftState">
+		UPDATE GIFT_BOX_LIST
+		SET gift_state = #{giftState}
+		WHERE idx = #{giftIdx} 
+	</update>
+	
+	<select id="validateUpdateGiftState" resultType="Integer">
+		SELECT gift_state
+		FROM GIFT_BOX_LIST
+		WHERE idx = #{giftIdx}
+	</select>
+	
+	<select id="userPresentList" resultType="UserPresentDomainDto">
+		SELECT *
+			FROM (
+				SELECT 
+					@ROWNUM:=@ROWNUM+1 AS ROWNUM, Z.sender, Z.receiver, Z.create_date, ZZ.item_name, Z.open_yn, Z.open_date
+				FROM (
+					SELECT
+						(SELECT phone_number FROM BIRD_USER WHERE user_id = A.send_user_id) as sender,
+						(SELECT phone_number FROM BIRD_USER WHERE user_id = A.receive_user_id) as receiver,
+						DATE_ADD(A.create_date, INTERVAL 9 HOUR) as create_date, A.open_yn, 
+						DATE_ADD(A.open_date, INTERVAL 9 HOUR) as open_date,
+						(select itemCode from USER_ITEM_BUY_LIST where idx = B.item_buy_id) as itemCode
+					FROM
+						USER_PRESENT A INNER JOIN PRESENT_BIRD_ITEM B
+						ON A.idx = B.user_present_idx,
+						(SELECT @ROWNUM:=0)R
+					ORDER BY create_date DESC
+				) Z
+				INNER JOIN
+				(
+					SELECT item_code, item_name
+					FROM ITEM_INFO
+				) ZZ
+				ON Z.itemCode = ZZ.item_code
+				WHERE Z.itemCode IS NOT NULL
+				<if test="startDate != ''">
+					AND Z.create_date BETWEEN #{startDate} AND #{endDate}
+				</if>
+				<if test="senderPhoneNumber != ''">
+					AND Z.sender LIKE CONCAT ('%',#{senderPhoneNumber},'%')
+				</if>
+				<if test="receiverPhoneNumber != ''">
+					AND Z.receiver LIKE CONCAT ('%',#{receiverPhoneNumber},'%')
+				</if>
+			) ZZZ
+			WHERE ROWNUM BETWEEN #{start} AND #{end}
+	</select>
+	
+	<select id="userPresentListCnt" resultType="Integer">
+		SELECT count(idx) as cnt
+		FROM (
+			SELECT
+				A.idx,
+				(SELECT phone_number FROM BIRD_USER WHERE user_id = A.send_user_id) as sender,
+				(SELECT phone_number FROM BIRD_USER WHERE user_id = A.receive_user_id) as receiver,
+				A.create_date, A.open_yn, A.open_date,
+				(select itemCode from USER_ITEM_BUY_LIST where idx = B.item_buy_id) as itemCode
+			FROM USER_PRESENT A INNER JOIN PRESENT_BIRD_ITEM B
+			ON A.idx = B.user_present_idx
+		) Z
+		WHERE Z.itemCode IS NOT NULL
+		<if test="startDate != ''">
+			AND Z.create_date BETWEEN #{startDate} AND #{endDate}
+		</if>
+		<if test="senderPhoneNumber != ''">
+			AND Z.sender LIKE CONCAT ('%',#{senderPhoneNumber},'%')
+		</if>
+		<if test="receiverPhoneNumber != ''">
+			AND Z.receiver LIKE CONCAT ('%',#{receiverPhoneNumber},'%')
+		</if>
+	</select>
+	
+	<select id="userCoinPresentList" resultType="UserPresentDomainDto">
+		SELECT *  
+			FROM (
+					SELECT 
+						@ROWNUM:=@ROWNUM+1 AS ROWNUM, Z.*
+					FROM (
+						SELECT
+							(SELECT phone_number FROM BIRD_USER WHERE user_id = A.send_user_id) as sender,
+							(SELECT phone_number FROM BIRD_USER WHERE user_id = A.receive_user_id) as receiver,
+							DATE_ADD(A.create_date, INTERVAL 9 HOUR) as create_date, A.open_yn, 
+							DATE_ADD(A.open_date, INTERVAL 9 HOUR) as open_date, B.coin
+						FROM USER_PRESENT A INNER JOIN PRESENT_COIN B
+						ON A.idx = B.user_present_idx
+						ORDER BY create_date DESC
+					) Z,(SELECT @ROWNUM:=0)R
+			WHERE Z.coin IS NOT NULL
+			<if test="startDate != ''">
+				AND Z.create_date BETWEEN #{startDate} AND #{endDate}
+			</if>
+			<if test="senderPhoneNumber != ''">
+				AND Z.sender LIKE CONCAT ('%',#{senderPhoneNumber},'%')
+			</if>
+			<if test="receiverPhoneNumber != ''">
+				AND Z.receiver LIKE CONCAT ('%',#{receiverPhoneNumber},'%')
+			</if>
+		) ZZ
+		WHERE ZZ.ROWNUM BETWEEN #{start} AND #{end}
+		ORDER BY create_date DESC
+	</select>
+	
+	<select id="userCoinPresentListCnt" resultType="Integer">
+		SELECT count(Z.idx) as cnt
+		FROM (
+			SELECT
+				A.idx,
+				(SELECT phone_number FROM BIRD_USER WHERE user_id = A.send_user_id) as sender,
+				(SELECT phone_number FROM BIRD_USER WHERE user_id = A.receive_user_id) as receiver,
+				A.create_date, A.open_yn, A.open_date, B.coin
+			FROM USER_PRESENT A INNER JOIN PRESENT_COIN B
+			ON A.idx = B.user_present_idx
+		) Z,(SELECT @ROWNUM:=0)R
+		WHERE Z.coin IS NOT NULL
+		<if test="startDate != ''">
+			AND Z.create_date BETWEEN #{startDate} AND #{endDate}
+		</if>
+		<if test="senderPhoneNumber != ''">
+			AND Z.sender LIKE CONCAT ('%',#{senderPhoneNumber},'%')
+		</if>
+		<if test="receiverPhoneNumber != ''">
+			AND Z.receiver LIKE CONCAT ('%',#{receiverPhoneNumber},'%')
+		</if>
+	</select>
+	
+	<select id="userBirdPresentList" resultType="UserPresentDomainDto">
+		SELECT *
+			FROM (
+				SELECT 
+					@ROWNUM:=@ROWNUM+1 AS ROWNUM, Z.sender, Z.receiver, Z.create_date, ZZ.item_name, Z.open_yn, Z.open_date
+				FROM (
+					SELECT
+						(SELECT phone_number FROM BIRD_USER WHERE user_id = A.send_user_id) as sender,
+						(SELECT phone_number FROM BIRD_USER WHERE user_id = A.receive_user_id) as receiver,
+						DATE_ADD(A.create_date, INTERVAL 9 HOUR) as create_date, A.open_yn, 
+						DATE_ADD(A.open_date, INTERVAL 9 HOUR) as open_date,
+						(select body_type from LETTER_BIRD where bird_id = B.bird_id) as itemCode
+					FROM
+						USER_PRESENT A INNER JOIN PRESENT_BIRD B
+						ON A.idx = B.user_present_idx,
+						(SELECT @ROWNUM:=0)R
+					ORDER BY create_date DESC
+				) Z
+				INNER JOIN
+				(
+					SELECT 
+						item_code, item_name
+					FROM
+						ITEM_INFO
+				) ZZ
+				ON Z.itemCode = ZZ.item_code
+		WHERE Z.itemCode IS NOT NULL
+		<if test="startDate != ''">
+			AND Z.create_date BETWEEN #{startDate} AND #{endDate}
+		</if>
+		<if test="senderPhoneNumber != ''">
+			AND Z.sender LIKE CONCAT ('%',#{senderPhoneNumber},'%')
+		</if>
+		<if test="receiverPhoneNumber != ''">
+			AND Z.receiver LIKE CONCAT ('%',#{receiverPhoneNumber},'%')
+		</if>
+		) ZZZ
+	WHERE ROWNUM BETWEEN #{start} AND #{end}
+	ORDER BY create_date DESC
+	</select>
+	
+	<select id="userBirdPresentListCnt" resultType="Integer">
+		SELECT count(idx) as cnt
+		FROM (
+			SELECT
+				A.idx,
+				(SELECT phone_number FROM BIRD_USER WHERE user_id = A.send_user_id) as sender,
+				(SELECT phone_number FROM BIRD_USER WHERE user_id = A.receive_user_id) as receiver,
+				A.create_date, A.open_yn, A.open_date,
+				(select body_type from LETTER_BIRD where bird_id = B.bird_id) as itemCode
+			FROM USER_PRESENT A INNER JOIN PRESENT_BIRD B
+			ON A.idx = B.user_present_idx
+		) Z
+		WHERE Z.itemCode IS NOT NULL
+		<if test="startDate != ''">
+			AND Z.create_date BETWEEN #{startDate} AND #{endDate}
+		</if>
+		<if test="senderPhoneNumber != ''">
+			AND Z.sender LIKE CONCAT ('%',#{senderPhoneNumber},'%')
+		</if>
+		<if test="receiverPhoneNumber != ''">
+			AND Z.receiver LIKE CONCAT ('%',#{receiverPhoneNumber},'%')
+		</if>
+	</select>
+	
+	<select id="presentListAtExcel" resultType="GiftBoxListDomainDto">
+		SELECT  
+			A.idx, 
+			DATE_ADD(A.create_date, INTERVAL 9 HOUR) as create_date, 
+			DATE_ADD(A.expire_date, INTERVAL 9 HOUR) as expire_date,
+			A.gift_title, C.phone_number, 
+			B.user_name, B.birth_day, B.gender, 
+			A.gift_state, A.gift_type, A.coin_count,
+			DATE_ADD(A.receive_date, INTERVAL 9 HOUR) as receive_date,
+			(SELECT productName FROM PRODUCT_LIST WHERE itemCode = A.product_code COLLATE utf8mb4_general_ci) as product_name
+		FROM GIFT_BOX_LIST A LEFT JOIN USER_PROFILE B 
+		ON A.user_id = B.user_id LEFT JOIN BIRD_USER C
+		ON B.user_id = C.user_id
+		WHERE C.user_status = 'NORMAL'
+		<if test="startDate != ''">
+			AND A.create_date BETWEEN #{startDate} AND #{endDate}
+		</if>
+		<if test="searchType != ''">
+			AND
+			<if test="searchType == 'userName'">
+				B.user_name = #{searchValue}
+			</if>
+			<if test="searchType == 'phoneNumber'">
+				C.phone_number = #{searchValue}	
+			</if>
+		</if>
+		ORDER BY create_date DESC
+	</select>
+</mapper>

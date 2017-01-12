@@ -1,0 +1,394 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.challabros.birdletter.admin.mapper.NoticeMapper">
+
+<insert id="notiInsertByFile" parameterType="Map">
+	INSERT INTO NOTICE
+	(
+		title,
+		content,
+		fileName,
+		imgWidth,
+		imgHeight,
+		viewYn
+	)
+	VALUES
+	(
+		#{title},
+		#{content},
+		#{fileName},
+		#{imgWidth},
+		#{imgHeight},
+		#{viewYn}
+	)
+</insert>
+
+<select id="noticeList" resultType="NoticeDto">
+	SELECT *
+		FROM(
+			SELECT @ROWNUM:=@ROWNUM+1 AS ROWNUM, A.idx, A.title, A.content, A.fileName, A.viewYn,
+				A.imgWidth, A.imgHeight, DATE_ADD(A.createDate, INTERVAL 9 HOUR) AS createDate
+	        FROM (
+					SELECT * FROM NOTICE
+					<where>
+						<if test="title != ''">
+							title LIKE CONCAT ('%',#{title},'%')
+						</if>
+					</where>
+					ORDER BY createDate DESC
+	            )A, (SELECT @ROWNUM:=0)R
+			)Z
+	WHERE Z.ROWNUM BETWEEN #{start} AND #{end}
+</select>
+
+<select id="noticeListCnt" resultType="Integer">
+	SELECT count(idx) AS CNT
+	FROM NOTICE
+	<where>
+		<if test="title !=''">
+			title LIKE CONCAT ('%',#{title},'%')
+		</if>
+	</where>
+</select>
+
+<select id="noticeDetail" resultType="NoticeDto">
+	SELECT * FROM NOTICE
+	<where>
+		<if test="idx > 0">
+			idx = #{idx}
+		</if>
+	</where>
+</select>
+
+<delete id="deleteNotice">
+	DELETE FROM NOTICE
+	<where>
+		<if test="idx > 0">
+			idx = #{idx}
+		</if>
+	</where>
+</delete>
+
+<update id="modifyNotice" parameterType="NoticeDto">
+	UPDATE NOTICE
+	<set>
+		<if test="title != ''">
+			title = #{title},
+		</if>
+		<if test="content != ''">
+			content = #{content},
+		</if>
+		<if test="fileName != ''">
+			fileName = #{fileName},
+		</if>
+		<if test="imgWidth > 0">
+			imgWidth = #{imgWidth},
+		</if>
+		<if test="imgHeight > 0">
+			imgHeight = #{imgHeght},
+		</if>
+		<if test="viewYn >= 0">
+			viewYn = #{viewYn}
+		</if>
+	</set>
+	<where>
+		<if test="idx > 0">
+			idx = #{idx}
+		</if>
+	</where>
+</update>
+
+<update id="removeNoticeImage">
+	UPDATE NOTICE
+	<set>
+		fileName = "",
+		imgWidth = 0,
+		imgHeight = 0
+	</set>
+	<where>
+		<if test="idx > 0">
+			idx = #{idx}
+		</if>
+	</where>
+</update>
+
+<select id="popupNoticeList" resultType="PopupNoticeDto">
+	SELECT * 
+		FROM(
+			SELECT @ROWNUM:=@ROWNUM+1 AS ROWNUM,
+					A.idx,
+					A.title,
+					A.content,
+					A.target_url,
+					A.img_file_name,
+					A.use_yn,
+					A.start_date,
+					A.end_date,
+					A.create_date
+			FROM(
+				SELECT * FROM POPUP_NOTICE
+				<where>
+					<if test="title != ''">
+						title LIKE CONCAT('%',#{title},'%')
+					</if>
+				</where>
+				ORDER BY create_date DESC
+			)A, (SELECT @ROWNUM:=0)R
+		) Z
+	WHERE Z.ROWNUM BETWEEN #{start} AND #{end}
+</select>
+
+<select id="popupNoticeListCnt" resultType="Integer">
+	SELECT count(idx) AS cnt
+	FROM POPUP_NOTICE
+	<where>
+		<if test="title != ''">
+			title LIKE CONCAT('%',#{title},'%')
+		</if>
+	</where>
+</select>
+
+<insert id="insertPopupNotice" parameterType="PopupNoticeDto">
+	INSERT INTO POPUP_NOTICE
+	(
+		title, content, img_file_name, start_date, end_date, use_yn, target_url
+	)
+	VALUES
+	(
+		null, null,
+		<if test="imgFileName != ''">
+			#{imgFileName},
+		</if>
+		<if test="startDate != ''">
+			#{startDate},
+		</if>
+		<if test="endDate != ''">
+			#{endDate},
+		</if>
+		<if test="useYn >= 0">
+			#{useYn},
+		</if>
+		<if test="targetUrl != ''">
+			#{targetUrl}
+		</if>
+	)
+</insert>
+
+<update id="modifyPopupNotice" parameterType="PopupNoticeDto">
+	UPDATE POPUP_NOTICE
+	<set>
+		<if test="title != ''">
+			title = #{title},
+		</if>
+		<if test="content != ''">
+			content = #{content},
+		</if>
+		<if test="imgFileName != ''">
+			img_file_name = #{imgFileName},
+		</if>
+		<if test="startDate != ''">
+			start_date = #{startDate},
+		</if>
+		<if test="endDate != ''">
+			end_date = #{endDate},
+		</if>
+		<if test="useYn >= 0">
+			use_yn = #{useYn},
+		</if>
+		<if test="targetUrl != ''">
+			target_url = #{targetUrl},
+		</if>
+	</set>
+	<where>
+		<if test="idx > 0">
+			idx = #{idx}
+		</if>
+	</where>
+</update>
+
+<select id="detailPopupNotice" resultType="PopupNoticeDto">
+	SELECT idx, title, content, target_url, img_file_name, use_yn, start_date, end_date 
+	FROM POPUP_NOTICE
+	<where>
+		<if test="idx > 0">
+			idx = #{idx}
+		</if>
+	</where>
+</select>
+
+<delete id="deletePopNotice">
+	DELETE FROM POPUP_NOTICE
+	<where>
+		<if test="idx > 0">
+			idx = #{idx}
+		</if>
+	</where>
+</delete>
+
+<select id="birdTooltipList" resultType="BirdTooltipDto">
+	SELECT *
+        FROM (
+                SELECT @ROWNUM:=@ROWNUM+1 as ROWNUM, A.idx, A.first_tooltip, A.second_tooltip, A.regular_yn,
+                        A.start_date, A.end_date, A.order_yn, A.order_priority,
+                        <if test="sortType == 0">
+                        	view_yn,
+                        </if>
+                        <if test="sortType == 1">
+                        	view_yn,
+                        </if>
+                        <if test="sortType == 2">
+	                        view_yn,	
+                        </if>
+                        <if test="sortType == 3">
+                        	view_yn,
+                        </if>
+                        <if test="sortType == 4">
+                        	IF(now() > A.end_date, CASE view_yn WHEN 1 THEN 0 END , CASE view_yn WHEN 1 THEN 1 ELSE 0 END) as view_yn,
+                        </if>
+                        <if test="sortType == 5">
+                        	IF(now() > A.end_date, CASE view_yn WHEN 1 THEN 0 END , CASE view_yn WHEN 1 THEN 1 ELSE 0 END) as view_yn,
+                        </if>
+						create_date
+                 FROM (
+                        SELECT 
+                        	idx, first_tooltip, second_tooltip, regular_yn, start_date, 
+                        	end_date, order_yn, order_priority, view_yn, create_date
+                        FROM
+							BIRD_TOOLTIP
+						<!-- 기간지정순 -->
+						<if test="sortType == 0">
+							ORDER BY regular_yn = 0 desc, end_date desc, create_date desc
+						</if>
+						<!-- 상시순 -->
+						<if test="sortType == 1">
+							ORDER BY regular_yn = 1 desc, end_date desc, create_date desc 
+						</if>
+						<!-- 우선순 -->
+						<if test="sortType == 2">
+							ORDER BY order_yn = 1 desc, order_priority asc, create_date desc
+						</if>
+						<!-- 랜덤순 -->
+						<if test="sortType == 3">
+							ORDER BY order_yn = 0 desc, create_date desc
+						</if>
+                       )A, (SELECT @ROWNUM:=0)R
+	             )Z
+		WHERE Z.ROWNUM BETWEEN #{start} AND #{end}
+		<!-- 사용함 -->
+		<if test="sortType == 4">
+			ORDER BY view_yn = 1 desc, create_date desc
+		</if>
+		<if test="sortType == 5">
+			ORDER BY view_yn = 0 desc, create_date desc
+		</if>
+</select>
+
+<select id="birdTooltipListCnt" resultType="Integer">
+	SELECT count(idx) as cnt 
+	FROM BIRD_TOOLTIP
+	<!-- 기간지정순 -->		
+	<if test="sortType == 0">
+		ORDER BY regular_yn = 0 desc, end_date desc, create_date desc
+	</if>
+	<!-- 상시순 -->
+	<if test="sortType == 1">
+		ORDER BY regular_yn = 1 desc, end_date desc, create_date desc 
+	</if>
+	<!-- 우선순 -->
+	<if test="sortType == 2">
+		ORDER BY regular_yn = 1 desc, order_priority asc, create_date desc
+	</if>
+	<!-- 랜덤순 -->
+	<if test="sortType == 3">
+		ORDER BY order_yn = 0 desc, create_date desc
+	</if>
+	<!-- 사용함 -->
+	<if test="sortType == 4">
+		ORDER BY view_yn = 1 desc, create_date desc
+	</if>
+	<!-- 사용안함 -->
+	<if test="sortType == 5">
+		ORDER BY view_yn = 0 desc, create_date desc
+	</if>
+</select>
+
+<select id="isOrderPriority" resultType="Integer">
+	SELECT count(idx)
+	FROM BIRD_TOOLTIP
+	WHERE order_yn = 1
+	AND order_priority = #{orderNum}
+</select>
+
+<delete id="deleteBirdTip">
+	DELETE FROM BIRD_TOOLTIP
+	WHERE idx = #{idx}
+</delete>
+
+<select id="detailBirdToolTip" resultType="BirdTooltipDto">
+	SELECT 
+		first_tooltip, second_tooltip, regular_yn, start_date, 
+		end_date, order_yn, order_priority, view_yn
+	FROM BIRD_TOOLTIP
+	WHERE idx = #{idx}
+</select>
+
+<update id="updateBirdToolTip" parameterType="BirdTooltipDto">
+	UPDATE BIRD_TOOLTIP
+	<set>
+		<if test="firstTooltip != ''">
+			first_tooltip = #{firstTooltip},
+		</if>
+		<if test="secondTooltip != ''">
+			second_tooltip = #{secondTooltip},
+		</if>
+		<if test="regularYn != ''">
+			regular_yn = #{regularYn},
+		</if>
+		<if test="startDate != ''">
+			start_date = #{startDate},
+		</if>
+		<if test="endDate != ''">
+			end_date = #{endDate},
+		</if>
+		<if test="orderYn != ''">
+			order_yn = #{orderYn},
+		</if>
+		<if test="orderPriority >= 0 ">
+			order_priority = #{orderPriority},
+		</if>	
+		<if test="viewYn >= 0">
+			view_yn = #{viewYn},
+		</if>	
+	</set>
+	<where>
+		<if test="idx > 0">
+			idx = #{idx}
+		</if>
+	</where>
+</update>
+
+<insert id="insertBirdTooltip" parameterType="BirdTooltipDto">
+	INSERT INTO BIRD_TOOLTIP
+	(
+		<if test="firstTooltip != '' and firstTooltip != null">first_tooltip,</if>
+		<if test="secondTooltip != '' and secondTooltip != null">second_tooltip,</if>
+		<if test="regularYn > -1">regular_yn,</if>
+		<if test="startDate != '' and startDate != null">start_date,</if>
+		<if test="endDate != '' and endDate != null">end_date,</if>
+		<if test="orderYn > -1">order_yn,</if>
+		<if test="orderPriority > -1">order_priority,</if>
+		<if test="viewYn > -1">view_yn</if>
+	)
+	VALUES
+	(
+		<if test="firstTooltip != '' and firstTooltip != null">#{firstTooltip},</if>
+		<if test="secondTooltip != '' and secondTooltip != null">#{secondTooltip},</if>
+		<if test="regularYn > -1">#{regularYn},</if>
+		<if test="startDate != '' and startDate != null">#{startDate},</if>
+		<if test="endDate != '' and endDate != null">#{endDate},</if>
+		<if test="orderYn > -1">#{orderYn},</if>
+		<if test="orderPriority > -1">#{orderPriority},</if>
+		<if test="viewYn > -1">#{viewYn}</if>
+	)
+</insert>
+</mapper>

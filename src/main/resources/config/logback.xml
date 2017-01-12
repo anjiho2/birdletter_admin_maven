@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright(c) 2015 BirdLetter. All rights reserved.
+  ~ This software is the proprietary information of BirdLetter.
+  -->
+
+<configuration scan="true" scanPeriod="30 seconds">
+    <timestamp key="byDay" datePattern="yyyy-MM-dd"/>
+    <!--<property name="LOG_HOME" value="${}" />-->
+
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="FILE" class="ch.qos.logback.core.FileAppender">
+        <file>/home/ec2-user/bird-admin-logs/log4j_root_${byDay}.log</file>
+        <append>true</append>
+        <encoder>
+            <pattern>%date %level [%thread] %logger{10} [%file:%line] %msg%n</pattern>
+        </encoder>
+    </appender>
+    
+	<logger name="org.mybatis" level="trace" />
+    <logger name="com.challabros.birdletter.admin.mapper" level="DEBUG"/>
+    <logger name="com.challabros.birdletter.admin.service.INFO" level="INFO"/>
+ 	
+    <root level="${logger.level}">
+    	<appender-ref ref="${logger.name}" />
+    </root>
+</configuration>

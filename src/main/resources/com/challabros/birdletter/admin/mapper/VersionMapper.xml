@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.challabros.birdletter.admin.mapper.VersionMapper">
+
+	<select id="birdLetterVersionInfo" resultType="VersionInfoDto">
+		SELECT * FROM BIRDLETTER_VERSION_INFO
+		WHERE device = #{device}
+	</select>
+	
+	<select id="birdLetterVersionInfo_test" resultType="VersionInfoDto">
+		SELECT * FROM BIRDLETTER_VERSION_INFO_TEST
+		WHERE device = #{device}
+	</select>
+	
+	<update id="updateBirdLetterVersionInfo">
+		UPDATE BIRDLETTER_VERSION_INFO
+		<set>
+			<if test="versionNumber != ''">
+				version_number = #{versionNumber},
+			</if>
+			<if test="serverOnoff != ''">
+				server_onoff = #{serverOnoff},
+			</if>
+			<if test="serverStatusCode != ''">
+				erver_status_code = #{serverStatusCode},
+			</if>
+			<if test="serverStatusContent != ''">
+				server_status_content = #{serverStatusContent},
+			</if>
+			<if test="serverStatusTitle != ''">
+				server_status_title = #{serverStatusTitle},
+			</if>
+			<if test="updateDate != ''">
+				update_date = now()
+			</if>
+		</set>
+		WHERE idx = #{idx}
+	</update>
+	
+	<update id="updateBirdLetterVersionInfo_test">
+		UPDATE BIRDLETTER_VERSION_INFO_TEST
+		<set>
+			<if test="versionNumber != ''">
+				version_number = #{versionNumber},
+			</if>
+			<if test="serverOnoff != ''">
+				server_onoff = #{serverOnoff},
+			</if>
+			<if test="serverStatusCode != ''">
+				erver_status_code = #{serverStatusCode},
+			</if>
+			<if test="serverStatusContent != ''">
+				server_status_content = #{serverStatusContent},
+			</if>
+			<if test="serverStatusTitle != ''">
+				server_status_title = #{serverStatusTitle},
+			</if>
+			<if test="updateDate != ''">
+				update_date = now()
+			</if>
+		</set>
+		WHERE idx = #{idx}
+	</update>
+</mapper>

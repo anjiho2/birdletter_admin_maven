@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- <!DOCTYPE dwr PUBLIC "-//GetAhead Limited//DTD Direct Web Remoting 2.0//EN" "http://getahead.ltd.uk/dwr/dwr20.dtd"> -->
+<!DOCTYPE dwr PUBLIC "-//GetAhead Limited//DTD Direct Web Remoting 3.0//EN" "http://getahead.org/dwr//dwr30.dtd">
+
+<dwr>
+	<allow>
+		<!-- ========================= SERVICE ======================== -->
+		<convert converter="bean" match="com.challabros.birdletter.admin.service.UserService"/>
+		<convert converter="bean" match="com.challabros.birdletter.admin.service.PushService"/>
+		<convert converter="bean" match="com.challabros.birdletter.admin.service.LoginService"/>
+		<convert converter="bean" match="com.challabros.birdletter.admin.service.StatisticsService"/>
+		<convert converter="bean" match="com.challabros.birdletter.admin.service.BirdService"/>
+		<convert converter="bean" match="com.challabros.birdletter.admin.service.ItemService"/>
+		<convert converter="bean" match="com.challabros.birdletter.admin.service.SaleService"/>
+		<convert converter="bean" match="com.challabros.birdletter.admin.service.NoticeService"/>
+		<convert converter="bean" match="com.challabros.birdletter.admin.service.LetterService"/>
+		<convert converter="bean" match="com.challabros.birdletter.admin.service.GiftService"/>
+		<convert converter="bean" match="com.challabros.birdletter.admin.service.VersionService"/>
+		
+		<create creator="spring" javascript="userService">
+			<param name="class" value="com.challabros.birdletter.admin.service.UserService"/>
+			<param name="beanName" value="userService" /> 
+		</create>
+		
+		<create creator="spring" javascript="pushService">
+			<param name="class" value="com.challabros.birdletter.admin.service.PushService"/>
+			<param name="beanName" value="pushService" /> 
+		</create>
+		
+		<create creator="spring" javascript="loginService">
+			<param name="class" value="com.challabros.birdletter.admin.service.LoginService"/>
+			<param name="beanName" value="loginService" /> 
+		</create>
+		
+		<create creator="spring" javascript="statisticsService">
+			<param name="class" value="com.challabros.birdletter.admin.service.StatisticsService"/>
+			<param name="beanName" value="statisticsService" /> 
+		</create>
+		
+		<create creator="spring" javascript="birdService">
+			<param name="class" value="com.challabros.birdletter.admin.service.BirdService"/>
+			<param name="beanName" value="birdService" /> 
+		</create>
+		
+		<create creator="spring" javascript="itemService">
+			<param name="class" value="com.challabros.birdletter.admin.service.ItemService"/>
+			<param name="beanName" value="itemService" /> 
+		</create>
+		
+		<create creator="spring" javascript="saleService">
+			<param name="class" value="com.challabros.birdletter.admin.service.SaleService"/>
+			<param name="beanName" value="saleService" /> 
+		</create>
+		
+		<create creator="spring" javascript="noticeService">
+			<param name="class" value="com.challabros.birdletter.admin.service.NoticeService"/>
+			<param name="beanName" value="noticeService" /> 
+		</create>
+		
+		<create creator="spring" javascript="letterService">
+			<param name="class" value="com.challabros.birdletter.admin.service.LetterService"/>
+			<param name="beanName" value="letterService" /> 
+		</create>
+		
+		<create creator="spring" javascript="giftService">
+			<param name="class" value="com.challabros.birdletter.admin.service.GiftService"/>
+			<param name="beanName" value="giftService" /> 
+		</create>
+		
+		<create creator="spring" javascript="heartService">
+			<param name="class" value="com.challabros.birdletter.admin.service.HeartService"/>
+			<param name="beanName" value="heartService" /> 
+		</create>
+		
+		<create creator="spring" javascript="versionService">
+			<param name="class" value="com.challabros.birdletter.admin.service.VersionService"/>
+			<param name="beanName" value="versionService" /> 
+		</create>
+		
+		<!-- ========================= MANAGER ======================== -->
+		<convert converter="bean" match="com.challabros.birdletter.admin.manager.CronManager"/>
+		
+		<create creator="spring" javascript="cronManager">
+			<param name="class" value="com.challabros.birdletter.admin.manager.CronManager"/>
+			<param name="beanName" value="cronManager" /> 
+		</create>
+		
+		<!--  dto 선언 -->
+		<convert converter="bean" match="com.challabros.birdletter.admin.dto.UserProfileDto"/>
+		<convert converter="bean" match="com.challabros.birdletter.admin.dto.BirdUserDto"/>
+		<convert converter="bean" match="com.challabros.birdletter.admin.dto.PushInfoDto"/>
+		<convert converter="bean" match="com.challabros.birdletter.admin.dto.PagingDto"/>
+		<convert converter="bean" match="com.challabros.birdletter.admin.dto.ItemBuyRankDto"/>
+		<convert converter="bean" match="com.challabros.birdletter.admin.dto.UserProductBuyStatsicsDto"/>
+		<convert converter="bean" match="com.challabros.birdletter.admin.dto.DownloadCountInfoDto"/>
+		<convert converter="bean" match="com.challabros.birdletter.admin.dto.MemberStatisticsDto"/>
+		<convert converter="bean" match="com.challabros.birdletter.admin.dto.DateCountDto"/>
+		<convert converter="bean" match="com.challabros.birdletter.admin.dto.LetterStatisticsDto"/>
+		<convert converter="bean" match="com.challabros.birdletter.admin.dto.AuthStatisticsDto"/>
+		<convert converter="bean" match="com.challabros.birdletter.admin.dto.DormantUserDto"/>
+		<convert converter="bean" match="com.challabros.birdletter.admin.dto.CoinBuyLogDto"/>
+		<convert converter="bean" match="com.challabros.birdletter.admin.dto.LetterBirdDto"/>
+		<convert converter="bean" match="com.challabros.birdletter.admin.dto.UserItemBuyListDto"/>
+		<convert converter="bean" match="com.challabros.birdletter.admin.dto.UserProductBuyLogDto"/>
+		<convert converter="bean" match="com.challabros.birdletter.admin.dto.ProductListDto"/>
+		<convert converter="bean" match="com.challabros.birdletter.admin.dto.ItemInfoDto"/>
+		<convert converter="bean" match="com.challabros.birdletter.admin.dto.CollectionItemInfoDto"/>
+		<convert converter="bean" match="com.challabros.birdletter.admin.dto.CornInfoDto"/>
+		<convert converter="bean" match="com.challabros.birdletter.admin.dto.PopcornInfoDto"/>
+		<convert converter="bean" match="com.challabros.birdletter.admin.dto.NoticeDto"/>
+		<convert converter="bean" match="com.challabros.birdletter.admin.dto.PopupNoticeDto"/>
+		<convert converter="bean" match="com.challabros.birdletter.admin.dto.BirdTooltipDto"/>
+		<convert converter="bean" match="com.challabros.birdletter.admin.dto.PushInfoDto"/>
+		<convert converter="bean" match="com.challabros.birdletter.admin.dto.PushSendListDto"/>
+		<convert converter="bean" match="com.challabros.birdletter.admin.dto.OpenLetterDto"/>
+		<convert converter="bean" match="com.challabros.birdletter.admin.dto.OpenLetterIllegalReportDto"/>
+		<convert converter="bean" match="com.challabros.birdletter.admin.dto.GiftBoxListDomainDto"/>
+		<convert converter="bean" match="com.challabros.birdletter.admin.dto.UserPresentDomainDto"/>
+		<convert converter="bean" match="com.challabros.birdletter.admin.dto.TodayPresentPopcornInfoDto"/>
+		<convert converter="bean" match="com.challabros.birdletter.admin.dto.VersionInfoDto"/>
+		<convert converter="bean" match="com.challabros.birdletter.admin.dto.ItemTypeDto"/>
+		<convert converter="bean" match="com.challabros.birdletter.admin.dto.CornSaleListDto"/>
+		<convert converter="bean" match="com.challabros.birdletter.admin.dto.GatchaUseLogDto"/>
+		<convert converter="bean" match="com.challabros.birdletter.admin.dto.NestItemBuyLogDto"/>
+		<!-- define -->		
+		<convert converter="enum" match="com.challabros.birdletter.admin.define.datasource.StoreType"/>
+		<convert converter="enum" match="com.challabros.birdletter.admin.define.datasource.ItemType"/>
+		
+		
+	</allow>
+
+</dwr>

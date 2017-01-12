@@ -1,0 +1,239 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.challabros.birdletter.admin.mapper.push.PushMapper">
+
+<insert id="pushInfoInsert" parameterType="PushInfoDto">
+	INSERT INTO pushInfo
+	( name, content, subTitle, sendDateTime )
+	VALUES
+	( #{name}, #{content}, #{subTitle}, #{sendDateTime} )
+</insert>
+	
+<select id="pushInfoList" parameterType="Map" resultType="PushInfoDto">
+	SELECT * 
+		FROM (
+				SELECT @ROWNUM:=@ROWNUM+1 AS ROWNUM, A.*
+	            FROM (
+						SELECT * FROM pushInfo
+						<where>
+							<if test="pushType == 'ANNIVERSARY'">
+								sendType = "ANNIVERSARY"
+							</if>
+							<if test="pushType == 'BIRTHDAY'">
+								sendType = "BIRTHDAY"
+							</if>
+						</where>
+						<if test="status == 'all'">
+							AND sendStatus IN ('0','1')
+						</if>
+						<if test="status == 'pre'">
+							AND sendStatus IN ('0')	
+						</if>
+						<if test="status == 'after'">
+							AND sendStatus IN ('1')
+						</if>
+						<if test="name !=''">
+							AND name LIKE CONCAT('%',#{name},'%')
+						</if>
+						ORDER BY idx DESC
+					) A, (SELECT @ROWNUM:=0) R
+			)Z
+	WHERE Z.ROWNUM BETWEEN #{start} AND #{end}
+</select>
+
+<select id="pushInfoListCnt" resultType="Integer">
+	SELECT COUNT(idx) AS CNT
+	FROM pushInfo
+	<where>
+		<if test="pushType == 'ANNIVERSARY'">
+			sendType = "ANNIVERSARY"
+		</if>
+		<if test="pushType == 'BIRTHDAY'">
+			sendType = "BIRTHDAY"
+		</if>
+	</where>
+	<if test="status == 'all'">
+		AND sendStatus IN ('0','1')
+	</if>
+	<if test="status == 'pre'">
+		AND sendStatus IN ('0')	
+	</if>
+	<if test="status == 'after'">
+		AND sendStatus IN ('1')
+	</if>
+	<if test="name !=''">
+		AND name LIKE CONCAT('%',#{name},'%')
+	</if>
+</select>
+
+<select id="findPushInfoIdxByAnniversary" resultType="Integer">
+	SELECT idx
+	FROM pushInfo
+	WHERE sendDateTime = #{sendDateTime}
+	AND sendType = "ANNIVERSARY"
+</select>
+
+<select id="findPushInfoByAdmin" resultType="PushInfoDto">
+	SELECT idx, name, content, subTitle, sendDateTime
+	FROM pushInfo
+	WHERE sendType = "ADMIN"
+	AND idx = #{idx} 
+</select>
+
+<select id="findPushInfo" resultType="PushInfoDto">
+	SELECT idx, name, content, subTitle, sendDateTime
+	FROM pushInfo
+	WHERE sendType = "ANNIVERSARY"
+	AND idx = #{idx} 
+</select>
+
+<select id="selectPushReserve" resultType="PushReserveDto">
+	SELECT * FROM pushReserve WHERE DATE(sendDateTime) = #{date}
+</select>
+
+<insert id="insertPushSendList" parameterType="list">
+	INSERT INTO
+		pushSendList
+		(
+			pushIdx,
+			targetUserId,
+			pushLabel,
+			pushSubTitle,
+			pushSendDateTime,
+			sendType
+		)
+		VALUES
+		<foreach collection="list" item="values" separator=",">
+		(
+			#{values.pushIdx},
+			#{values.userId},
+			#{values.pushLabel},
+			#{values.pushSubTitle},
+			#{values.pushSendDateTime},
+			#{values.sendType}
+		)
+		</foreach>
+</insert>
+
+<insert id="insertPushSendListAtBirthday" parameterType="list">
+	INSERT INTO
+		pushSendList
+		(
+			pushIdx,
+			userId,
+			targetUserId,
+			pushLabel,
+			pushSubTitle,
+			pushSendDateTime,
+			sendType
+		)
+		VALUES
+		<foreach collection="list" item="values" separator=",">
+		(
+			#{values.pushIdx},
+			#{values.userId},
+			#{values.targetUserId},
+			#{values.pushLabel},
+			#{values.pushSubTitle},
+			#{values.pushSendDateTime},
+			#{values.sendType}
+		)
+		</foreach>
+</insert>
+
+<insert id="insertPushSendListAtBirthdayLog" parameterType="list">
+	INSERT INTO
+		pushSendLog
+		(
+			pushIdx,
+			userId,
+			targetUserId,
+			pushLabel,
+			pushSubTitle,
+			pushSendDateTime,
+			sendType
+		)
+		VALUES
+		<foreach collection="list" item="values" separator=",">
+		(
+			#{values.pushIdx},
+			#{values.userId},
+			#{values.targetUserId},
+			#{values.pushLabel},
+			#{values.pushSubTitle},
+			#{values.pushSendDateTime},
+			#{values.sendType}
+		)
+		</foreach>
+</insert>
+
+<insert id="pushInfoInsertbyBirthDay" parameterType="PushInfoDto">
+	INSERT INTO
+		pushInfo
+		(
+			name,
+			content,
+			subTitle,
+			sendDateTime,
+			sendType
+		)
+		VALUES
+		(
+			#{name},
+			#{content},
+			#{subTitle},
+			#{sendDateTime},
+			#{sendType}
+		)
+	<selectKey resultType="int" keyProperty="idx" keyColumn="idx" order="AFTER">
+    	SELECT LAST_INSERT_ID() 
+	</selectKey>
+</insert>
+
+<insert id="insertPushSendListByGift" parameterType="PushSendListDto">
+	INSERT INTO
+		pushSendList
+		(
+			targetUserId,
+			pushIdx,
+			pushLabel,
+			pushSubTitle,
+			pushSendDateTime,
+			sendType
+		)
+		VALUES
+		(
+			#{targetUserId},
+			#{pushIdx},
+			#{pushLabel},
+			#{pushSubTitle},
+			#{pushSendDateTime},
+			#{sendType}
+		)
+</insert>
+
+<insert id="insertReservePush" parameterType="PushReserveDto">
+	INSERT INTO pushReserve
+	(
+		name,
+		content,
+		subTitle,
+		sendDateTime,
+		retension,
+		sendType
+	)
+	VALUES
+	(
+		#{name},
+		#{content},
+		"",
+		#{sendDateTime},
+		#{retension},
+		#{sendType}
+	)
+</insert>
+
+<delete id="deletePushSendList">
+	DELETE FROM pushSendList WHERE sendListStatus = 1
+</delete>
+</mapper>

@@ -1,0 +1,445 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.challabros.birdletter.admin.mapper.UserMapper">
+
+	<resultMap id="userProfileListMap" type="UserProfileDto">
+		<result property="rowNum" 		column="ROWNUM"	/>
+		<result property="userId" 		column="user_id" />
+		<result property="userName" 	column="user_name" />
+		<result property="createDate" 	column="create_date" />
+		<result property="phoneNumber" 	column="phone_number" />
+		<result property="cornPoint" 	column="corn_point" />
+		<result property="popcornPoint"	column="popcorn_point" />
+		<result property="birthDay"		column="birth_day" />
+		<result property="gender"		column="gender" />
+		<result property="appVersion"	column="app_version" />
+	</resultMap>
+
+	<select id="userProfileList" resultMap="userProfileListMap">
+	SELECT * FROM (
+		  SELECT @ROWNUM:=@ROWNUM+1 AS ROWNUM, T.*
+		     FROM (
+		        SELECT A.user_id, A.phone_number,
+		               B.user_name, DATE_ADD(B.create_date, INTERVAL 9 HOUR) AS create_date, B.birth_day, B.gender, 
+		               C.app_version, A.corn_point, A.popcorn_point
+		        FROM BIRD_USER A LEFT JOIN USER_PROFILE B
+		        ON A.user_id = B.user_id LEFT JOIN PNS_USER C 
+		        ON B.user_id = C.user_id
+		        WHERE A.user_status = 'NORMAL'
+		        <if test="userName != '' ">
+					AND B.user_name LIKE CONCAT('%',#{userName},'%')
+				</if>
+				<if test="phoneNumber != '' ">
+					AND A.phone_number LIKE CONCAT('%',#{phoneNumber},'%')
+				</if>
+		        ORDER BY B.create_date DESC
+				)T, (SELECT @ROWNUM:=0) R
+			)Z
+		WHERE Z.ROWNUM BETWEEN #{start} AND #{end}
+	<!-- 
+	SELECT * FROM (
+		  SELECT @ROWNUM:=@ROWNUM+1 AS ROWNUM, T.*
+		     FROM (
+		        SELECT A.user_id, A.phone_number,
+		               B.user_name, DATE_ADD(B.create_date, INTERVAL 9 HOUR) AS create_date, B.birth_day, B.gender, 
+		               C.app_version, D.corn_point, D.popcorn_point
+		        FROM BIRD_USER A LEFT JOIN USER_PROFILE B
+		        ON A.user_id = B.user_id LEFT JOIN PNS_USER C 
+		        ON B.user_id = C.user_id LEFT JOIN BIRD_USER_COIN_POINT D
+		        ON C.user_id = D.user_id 
+		        WHERE A.user_status = 'NORMAL'
+		        <if test="userName != '' ">
+					AND B.user_name LIKE CONCAT('%',#{userName},'%')
+				</if>
+				<if test="phoneNumber != '' ">
+					AND A.phone_number LIKE CONCAT('%',#{phoneNumber},'%')
+				</if>
+		        ORDER BY B.create_date DESC
+				)T, (SELECT @ROWNUM:=0) R
+			)Z
+		WHERE Z.ROWNUM BETWEEN #{start} AND #{end}
+		 -->
+	</select>
+	
+	<select id="userProfileListAll" resultType="UserProfileDto">
+		SELECT
+		<if test="listType == 'DEFAULT' ">
+			A.user_id, A.phone_number, A.corn_point, A.popcorn_point, B.user_name, B.create_date
+		</if>
+		 <if test="listType == 'EXCEL' ">
+		 	B.user_name, A.phone_number, DATE(B.birth_day) as birth_day, IF(B.gender = 'MALE', '남성', '여성') as gender
+		 </if>
+		FROM BIRD_USER A LEFT JOIN USER_PROFILE B
+		ON A.user_id = B.user_id
+	</select>
+	
+	<select id="userProfileCnt" resultType="Integer">
+		SELECT COUNT(*) AS CNT
+		FROM USER_PROFILE A LEFT JOIN BIRD_USER B
+		ON A.user_id = B.user_id
+		WHERE B.user_status = 'NORMAL'
+		<if test="userName != '' ">
+			AND A.user_name LIKE CONCAT('%',#{userName},'%')
+		</if>
+		<if test="phoneNumber != '' ">
+			AND B.phone_number LIKE CONCAT('%',#{phoneNumber},'%')
+		</if>
+		
+	</select>
+	
+	<select id="userProfileDetail" resultType="UserProfileDto">
+		SELECT
+	        A.user_id, A.phone_number, A.uuid, A.facebook_id, A.auth_token, DATE_ADD(A.auth_date, INTERVAL 9 HOUR) as auth_date, 
+	        B.message, B.gender, B.user_name, B.birth_day, B.college, B.company, B.create_date, C.os_type, D.total_heart_point,
+	        A.corn_point, A.popcorn_point
+		FROM BIRD_USER A LEFT JOIN USER_PROFILE B
+		ON A.user_id = B.user_id LEFT JOIN PNS_USER C
+		ON B.user_id = C.user_id LEFT JOIN BIRD_USER_HEART_POINT D
+		ON C.user_id = D.user_id
+		<where>
+			<if test="userId > 0">
+				A.user_id = #{userId}
+			</if>
+			<if test="userName != '' ">
+				B.user_name = #{userName}
+			</if>
+			<if test="phoneNumber != '' ">
+				A.phone_number = #{phoneNumber}
+			</if>
+		</where>
+		<!-- 
+		SELECT
+	        A.user_id, A.phone_number, A.uuid, A.facebook_id, A.auth_token, DATE_ADD(A.auth_date, INTERVAL 9 HOUR) as auth_date, 
+	        B.message, B.gender, B.user_name, B.birth_day, B.college, B.company, B.create_date, C.os_type, D.total_heart_point,
+	        E.corn_point, E.popcorn_point
+		FROM BIRD_USER A LEFT JOIN USER_PROFILE B
+		ON A.user_id = B.user_id LEFT JOIN PNS_USER C
+		ON B.user_id = C.user_id LEFT JOIN BIRD_USER_HEART_POINT D
+		ON C.user_id = D.user_id LEFT JOIN BIRD_USER_COIN_POINT E
+		ON D.user_id = E.user_id
+		<where>
+			<if test="userId > 0">
+				A.user_id = #{userId}
+			</if>
+			<if test="userName != '' ">
+				B.user_name = #{userName}
+			</if>
+			<if test="phoneNumber != '' ">
+				A.phone_number = #{phoneNumber}
+			</if>
+		</where>
+		 -->
+	</select>
+	
+	<select id="userCornBuyLogList" resultType="CoinBuyLogDto">
+		SELECT *
+			FROM(
+				SELECT @ROWNUM:=@ROWNUM+1 AS ROWNUM, A.*
+				FROM(
+					SELECT cbl.idx, cbl.corn_idx, (CASE ci.corn_count
+						WHEN 10 THEN 1100
+						WHEN 22 THEN 2200
+						WHEN 55 THEN 5500
+						WHEN 115 THEN 11000
+						WHEN 240 THEN 22000
+						WHEN 600 THEN 55000
+						ELSE ci.corn_count END
+						) as corn_count
+						, ci.corn_desc, cbl.create_date 
+					FROM CORN_BUY_LOG cbl LEFT JOIN CORN_INFO ci
+					ON cbl.corn_idx = ci.corn_idx
+					<where>
+						<if test="userId > 0">
+							cbl.user_id = #{userId}
+						</if>
+					</where>
+					<if test="cornName != ''">
+						AND ci.corn_desc LIKE CONCAT ('%',#{cornName},'%')
+					</if>
+					<if test="startDate != ''">
+						AND cbl.create_date BETWEEN #{startDate}
+					</if>
+					<if test="endDate != ''">
+						AND #{endDate}
+					</if>
+					ORDER BY cbl.create_date DESC
+					)A, (SELECT @ROWNUM:=0)R
+				)Z
+				WHERE Z.ROWNUM BETWEEN #{start} AND #{end}
+	</select>
+	
+	<select id="userCornBuyLogListCnt" resultType="Integer">
+		SELECT count(A.idx) as CNT
+		FROM CORN_BUY_LOG A, CORN_INFO B
+		WHERE A.corn_idx = B.corn_idx
+		<if test="userId > 0">
+			AND user_id = #{userId}
+		</if>
+		<if test="cornName != ''">
+			AND corn_desc LIKE CONCAT('%',#{cornName},'%')
+		</if>
+		<if test="startDate != ''">
+			create_date BETWEEN #{startDate} AND #{endDate}
+		</if>
+	</select>
+	
+	<select id="popcornBuyLogList" resultType="CoinBuyLogDto">
+		SELECT *
+			FROM(
+				SELECT @ROWNUM:=@ROWNUM+1 AS ROWNUM, A.*
+				FROM(
+					SELECT pbl.idx, pbl.popcorn_idx, pi.popcorn_point, pi.popcorn_name, pi.corn_count,
+					DATE_ADD(pbl.create_date, INTERVAL 9 HOUR) as create_date
+					FROM POPCORN_BUY_LOG pbl LEFT JOIN POPCORN_INFO pi
+					ON pbl.popcorn_idx = pi.popcorn_idx
+					<where>
+						<if test="userId > 0">
+							pbl.user_id = #{userId}
+						</if>
+					</where>
+					<if test="popcornName != ''">
+						AND pi.popcorn_name LIKE CONCAT ('%',#{popcornName},'%')
+					</if>
+					<if test="startDate != ''">
+						AND pbl.create_date BETWEEN #{startDate}
+					</if>
+					<if test="endDate != ''">
+						AND #{endDate}
+					</if>
+					ORDER BY pbl.create_date DESC
+			)A, (SELECT @ROWNUM:=0)R
+		)Z
+		WHERE Z.ROWNUM BETWEEN #{start} AND #{end}
+	</select>
+	
+	<select id="popcornBuyLogListCnt" resultType="Integer">
+		SELECT COUNT(A.idx) AS CNT
+		FROM POPCORN_BUY_LOG A, POPCORN_INFO B
+		WHERE A.popcorn_idx = B.popcorn_idx
+		<if test="userId > 0">
+			AND A.user_id = #{userId}
+		</if>
+		<if test="popcornName != ''">
+			AND B.popcorn_name LIKE CONCAT('%',#{popcornName},'%')
+		</if>
+		<if test="startDate !=''">
+			AND A.create_date BETWEEN #{startDate} AND #{endDate}
+		</if>
+	</select>
+	
+	<select id="findUserCornBuySum" resultType="Integer">
+		SELECT 
+			IFNULL(sum(CASE B.corn_count
+					WHEN 10 THEN 1100
+					WHEN 22 THEN 2200
+					WHEN 55 THEN 5500
+					WHEN 115 THEN 11000
+					WHEN 240 THEN 22000
+					WHEN 600 THEN 55000
+					ELSE corn_count END), 0) AS cornPrice 
+		FROM CORN_BUY_LOG A, CORN_INFO B
+		WHERE A.corn_idx = B.corn_idx
+		<if test="userId > 0">
+			AND A.user_id = #{userId} 
+		</if>
+	</select>
+	
+	<select id="findUserPopcornBuySum" resultType="Integer">
+		SELECT IFNULL(sum(B.popcorn_point), 0) AS cornPrice 
+		FROM POPCORN_BUY_LOG A, POPCORN_INFO B
+		WHERE A.popcorn_idx = B.popcorn_idx
+		<if test="userId > 0">
+			AND A.user_id = #{userId} 
+		</if>
+	</select>
+	
+	<select id="selectUserIdx" resultType="Integer">
+		SELECT A.user_id
+		FROM PNS_USER A LEFT JOIN BIRD_USER B
+		ON A.user_id = B.user_id
+		WHERE friend_birth_yn = "1"
+		AND B.user_status = 'NORMAL'
+	</select>
+	
+	<select id="selectUserIdxByWhere" resultType="Integer">
+		SELECT B.user_id
+		FROM USER_PROFILE A LEFT JOIN PNS_USER B
+		ON A.user_id = B.user_id LEFT JOIN BIRD_USER C
+		ON B.user_id = C.user_id
+		WHERE C.user_status = 'NORMAL'
+		<if test="gender != ''">
+			AND A.gender = #{gender}
+		</if>
+		<if test="age > 0">
+			AND LEFT((year(now()) - substring(A.birth_day,1,4)),2) >= #{age}
+		</if>
+	</select>
+	
+	<select id="selectUserIdxByComing" resultType="Integer">
+		SELECT B.user_id
+		FROM USER_PROFILE A LEFT JOIN PNS_USER B
+		ON A.user_id = B.user_id
+		LEFT JOIN BIRD_USER C
+		ON B.user_id = C.user_id
+		WHERE C.user_status = 'NORMAL'
+		<if test="age == 19">
+			LEFT((year(now()) - substring(A.birth_day,1,4)),2) = #age#
+		</if>
+	</select>
+	
+	<select id="findUserByBirthDay" resultType="Map">
+		SELECT A.user_id, C.user_name
+		FROM USER_PROFILE A, PNS_USER B, USER_PROFILE C, BIRD_USER D
+		WHERE A.user_id = B.user_id       
+		AND A.user_id = C.user_id
+		AND B.user_id = C.user_id
+		AND C.user_id = D.user_id
+		AND D.user_status = 'NORMAL'
+		AND A.birth_day LIKE CONCAT('%',#{birthDay},'%')
+	</select>
+	
+	<select id="findUserFriendShip" resultType="Long">
+		SELECT friend_user_id
+		FROM USER_FRIENDSHIP A LEFT JOIN PNS_USER B
+		ON A.user_id = B.user_id
+		WHERE A.state = "ACTIVE"
+		AND B.friend_birth_yn = '1'
+		AND A.user_id = #{userId}
+	</select>
+	
+	<select id="popcornBuyLogListAll" resultType="CoinBuyLogDto">
+		SELECT 
+			pi.popcorn_point, pi.popcorn_name, 
+	        DATE_ADD(pbl.create_date, INTERVAL 9 HOUR) as create_date
+		FROM POPCORN_BUY_LOG pbl LEFT JOIN POPCORN_INFO pi
+		ON pbl.popcorn_idx = pi.popcorn_idx
+		WHERE pbl.user_id = #{userId}
+		ORDER BY create_date DESC
+	</select>
+	
+	<select id="findUserPhoneNumber" resultType="String">
+		SELECT phone_number
+		FROM BIRD_USER
+		<where>
+			<if test="userId > 0">
+				user_id = #{userId}
+			</if>
+		</where>
+	</select>
+	
+	<select id="countAppVersion" resultType="Map">
+		SELECT app_version, count(app_version)as cnt
+		FROM PNS_USER
+		GROUP BY app_version
+	</select>
+	
+	<select id="getCountTotalUser" resultType="Integer">
+		SELECT count(user_id) as cnt
+		FROM BIRD_USER
+		WHERE user_status = 'NORMAL'
+	</select>
+	
+	<select id="getCountCornBuyUser" resultType="Integer">
+		SELECT count(user_id) as cnt
+		FROM CORN_BUY_LOG
+	</select>
+	
+	<select id="userLetterBirdListCnt" resultType="Integer">
+		SELECT COUNT(bird_id) AS CNT
+		FROM LETTER_BIRD A LEFT JOIN PRODUCT_LIST B
+		ON A.body_type = B.itemCode
+		<where>
+			<if test="userId > 0">
+				A.owner_id = #{userId}
+			</if>
+		</where>
+		<if test="productName != ''">
+			AND B.productName LIKE CONCAT('%',#{productName},'%')
+		</if>		
+	</select>
+	
+	<select id="userLetterBirdList" parameterType="LetterBirdDto" resultType="LetterBirdDto">
+		SELECT *
+			FROM(
+				SELECT @ROWNUM:=@ROWNUM+1 AS ROWNUM, A.bird_id, A.energy_con, A.bird_name, A.bird_emotion, 
+						A.bird_mood, DATE_ADD(A.bird_birth_day, INTERVAL 9 HOUR)as bird_birth_day,
+						A.bird_slot, A.total_heart_point, A.body_type, A.productName
+		        FROM(
+					SELECT * FROM LETTER_BIRD C LEFT JOIN PRODUCT_LIST D
+					ON C.body_type = D.itemCode
+					<where>
+						<if test="ownerId > 0">
+							C.owner_id = #{ownerId}	
+						</if>
+					</where>
+					<if test="productName != ''">
+						AND D.productName LIKE CONCAT('%',#{productName},'%')
+					</if>					
+					ORDER BY C.bird_slot DESC
+		            )A, (SELECT @ROWNUM:=0)R
+				)Z
+			WHERE Z.ROWNUM BETWEEN #{start} AND #{end}
+	</select>
+	
+	<select id="userItemBuyListAll" resultType="UserProductBuyLogDto">
+		SELECT 
+			B.productCode, A.productName, B.cornPrice, 
+        	B.popcornPrice,  DATE_ADD(B.createDate, INTERVAL 9 HOUR) as createDate 
+		FROM PRODUCT_LIST A LEFT JOIN USER_PRODUCT_BUY_LOG B
+		ON A.productCode = B.productCode
+		WHERE B.user_id = #{userId}
+		ORDER BY createDate DESC	
+	</select>
+	
+	<delete id="deleteUserLetterBird">
+		DELETE FROM LETTER_BIRD
+		<where>
+			<if test="birdId > 0">
+				bird_id = #{birdId}	
+			</if>
+		</where>
+	</delete>
+	
+	<update id="updateUserPoint" parameterType="map">
+		UPDATE BIRD_USER_COIN_POINT
+		<set>
+			<if test="cornPoint != ''">
+				corn_point = #{cornPoint},
+			</if>
+			<if test="popcornPoint != ''">
+				popcorn_point = #{popcornPoint}
+			</if>
+		</set>
+		WHERE user_id = #{userId}
+	</update>
+	<update id="addUserPoint">
+		UPDATE BIRD_USER_COIN_POINT
+		SET corn_point = corn_point + #{cornPoint},
+			popcorn_point = popcorn_point + #{popcornPoint}
+		WHERE user_id = #{userId}
+	</update>
+	
+	<select id="selectUserIdByAuthLog" resultType="Integer">
+		SELECT A.user_id, B.user_name
+		FROM BIRD_USER A LEFT JOIN USER_PROFILE B
+		ON A.user_id = B.user_id LEFT JOIN PNS_USER C
+		ON A.user_id = C.user_id
+		WHERE A.user_status = 'NORMAL'
+		AND C.anniversary_yn = '1'
+		<if test="authInverval &lt;= -1">
+		AND A.user_id NOT IN 
+		(
+			SELECT user_id 
+			FROM AUTH_DATE_LOG
+			WHERE DATE(DATE_ADD(create_date, INTERVAL 9 HOUR)) 
+	        BETWEEN DATE(DATE_ADD(DATE_ADD(#{searchDate}, INTERVAL 9 HOUR), INTERVAL #{authInverval} day))
+	        AND 
+	        DATE(DATE_ADD(#{searchDate}, INTERVAL 9 HOUR)) 
+			GROUP BY user_id
+		)
+		<![CDATA[
+		AND A.create_date < DATE(DATE_ADD(#{searchDate}, INTERVAL 9 HOUR))
+		]]>
+		</if>
+	</select>
+</mapper>

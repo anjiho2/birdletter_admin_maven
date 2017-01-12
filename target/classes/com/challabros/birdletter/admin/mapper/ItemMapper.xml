@@ -1,0 +1,899 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.challabros.birdletter.admin.mapper.ItemMapper">
+
+	<select id="itemBuyList" resultType="UserItemBuyListDto">
+		SELECT *
+			FROM (
+				SELECT @ROWNUM:=@ROWNUM+1 AS ROWNUM, A.*
+				FROM (
+					SELECT 
+						upbl.idx, upbl.user_id, upbl.productCode, bu.phone_number,
+             			DATE_ADD(upbl.createDate, INTERVAL 9 HOUR) as createDate 
+               		FROM USER_PRODUCT_BUY_LOG upbl, BIRD_USER bu
+					WHERE upbl.user_id = bu.user_id
+					AND bu.user_status="NORMAL"
+					<if test="phoneNumber != ''">
+						AND bu.phone_number LIKE CONCAT('%',#{phoneNumber},'%')
+					</if>
+					<if test="storeType !=''">
+						AND upbl.productCode LIKE CONCAT (#{storeType},'%')
+					</if>
+					ORDER BY upbl.createDate DESC
+				)A, (SELECT @ROWNUM:=0)R
+			)Z
+		WHERE Z.ROWNUM BETWEEN #{start} AND #{end}
+	</select>
+	
+	<select id="itemBuyListCnt" resultType="Integer">
+		SELECT count(B.phone_number) AS cnt
+		FROM USER_PRODUCT_BUY_LOG A, BIRD_USER B
+		WHERE A.user_id = B.user_id
+		AND B.user_status = 'NORMAL'
+		<if test="phoneNumber !=''">
+			AND B.phone_number LIKE CONCAT('%',#{phoneNumber},'%')
+		</if>
+		<if test="storeType !=''">
+			AND A.productCode LIKE CONCAT (#{storeType},'%')
+		</if>
+	</select>
+	
+	<select id="itemBuyListAll" resultType="UserProductBuyLogDto">
+		SELECT B.phone_number, A.productCode, C.productName, A.cornPrice, A.popcornPrice, (A.createDate) as createDate2 
+		FROM PRODUCT_LIST C RIGHT JOIN USER_PRODUCT_BUY_LOG A LEFT JOIN BIRD_USER B 
+		ON A.user_id = B.user_id
+		ON C.productCode = A.productCode
+		ORDER BY B.phone_number, A.productCode ASC
+	</select>
+	
+	<select id="userProductBuyLogListCnt" resultType="Integer">
+		SELECT COUNT(A.productCode) AS CNT
+		FROM USER_PRODUCT_BUY_LOG A LEFT JOIN PRODUCT_LIST B
+		ON A.productCode = B.productCode
+		<where>
+			<if test="userId > 0">
+				A.user_id = #{userId}	
+			</if>
+		</where>
+		<if test="productCode != ''">
+			AND A.productCode LIKE CONCAT ('%',#{productCode},'%') 
+		</if>
+		<if test="productName != ''">
+			AND B.productName LIKE CONCAT ('%',#{productName},'%')
+		</if>
+	</select>
+	
+	<select id="userProductBuyLogList" resultType="UserProductBuyLogDto">
+		SELECT *
+			FROM(
+				SELECT @ROWNUM:=@ROWNUM+1 AS ROWNUM, A.productCode, B.productName, A.cornPrice, A.popcornPrice, DATE_ADD(A.createDate, INTERVAL 9 HOUR) as createDate
+        		FROM (
+						SELECT * FROM USER_PRODUCT_BUY_LOG 
+					) A, 
+	        		(SELECT @ROWNUM:=0)R,
+	        		(SELECT productCode, productName FROM PRODUCT_LIST) B
+				WHERE A.productCode = B.productCode
+	        	AND A.user_id = #{userId}
+	        	<if test="productCode != ''">
+	        		AND A.productCode LIKE CONCAT('%',#{productCode},'%')
+	        	</if> 
+        		<if test="productName != ''">
+        			AND B.productName LIKE CONCAT('%',#{productName},'%')
+        		</if>
+        		ORDER BY A.createDate DESC, A.productCode ASC
+        		)Z
+        	WHERE Z.ROWNUM BETWEEN #{start} AND #{end}
+	</select>
+	
+	<select id="productListCnt" resultType="Integer">
+		SELECT COUNT(idx) AS CNT
+		FROM PRODUCT_LIST
+		<where>
+			<if test="storeType == 'clt'">
+				itemCategory = 1 AND itemType = 2
+			</if>
+			<if test="storeType == 'bird'">
+				itemCategory = 2 AND itemType = 1
+			</if>
+			<if test="storeType == 'decoeye'">
+				itemCategory = 2 AND itemType = 2
+			</if>
+			<if test="storeType == 'decomouth'">
+				itemCategory = 2 AND itemType = 3
+			</if>
+			<if test="storeType == 'decoskin'">
+				itemCategory = 2 AND itemType = 4
+			</if>
+			<if test="storeType == 'decomid'">
+				itemCategory = 3 AND itemType = 1
+			</if>
+			<if test="storeType == 'decotop'">
+				itemCategory = 3 AND itemType = 2
+			</if>
+			<if test="storeType == 'decoface'">
+				itemCategory = 3 AND itemType = 3
+			</if>
+			<if test="storeType == 'tdeco'">
+				itemCategory = 3 AND itemType = 4
+			</if>
+			<if test="storeType == 'housetop'">
+				itemCategory = 4 AND itemType = 1
+			</if>
+			<if test="storeType == 'houselow'">
+				itemCategory = 4 AND itemType = 2
+			</if>
+			<if test="storeType == 'thouse'">
+				itemCategory = 4 AND itemType = 3
+			</if>
+			<if test="storeType == 'bg'">
+				itemCategory = 5 AND itemType = 1
+			</if>
+			<if test="storeType == 'tbg'">
+				itemCategory = 5 AND itemType = 2
+			</if>
+			<if test="storeType == ''">
+				itemCategory != "" AND itemType != ""
+			</if>
+		</where>
+		<if test="productCode != ''">
+			AND productCode LIKE CONCAT ('%',#{productCode},'%')
+		</if>
+		<if test="itemCode != ''">
+			AND itemCode LIKE CONCAT ('%',#{itemCode},'%')
+		</if>
+		<if test="productName != ''">
+			AND productName LIKE CONCAT ('%',#{productName},'%')
+		</if>
+	</select>
+	
+	<select id="productList" resultType="ProductListDto">
+		SELECT *
+			FROM(
+				SELECT @ROWNUM:=@ROWNUM+1 AS ROWNUM, A.idx, A.productCode, A.productName, A.popcornPrice, A.cornPrice, A.itemCode, A.disCountPercent, A.viewYn, A.storeCondition
+        		FROM(
+					SELECT * FROM PRODUCT_LIST
+					<where>
+						<if test="storeType == 'clt'">
+							itemCategory = 1 AND itemType = 2
+						</if>
+						<if test="storeType == 'bird'">
+							itemCategory = 2 AND itemType = 1
+						</if>
+						<if test="storeType == 'decoeye'">
+							itemCategory = 2 AND itemType = 2
+						</if>
+						<if test="storeType == 'decomouth'">
+							itemCategory = 2 AND itemType = 3
+						</if>
+						<if test="storeType == 'decoskin'">
+							itemCategory = 2 AND itemType = 4
+						</if>
+						<if test="storeType == 'decomid'">
+							itemCategory = 3 AND itemType = 1
+						</if>
+						<if test="storeType == 'decotop'">
+							itemCategory = 3 AND itemType = 2
+						</if>
+						<if test="storeType == 'decoface'">
+							itemCategory = 3 AND itemType = 3
+						</if>
+						<if test="storeType == 'tdeco'">
+							itemCategory = 3 AND itemType = 4
+						</if>
+						<if test="storeType == 'housetop'">
+							itemCategory = 4 AND itemType = 1
+						</if>
+						<if test="storeType == 'houselow'">
+							itemCategory = 4 AND itemType = 2
+						</if>
+						<if test="storeType == 'thouse'">
+							itemCategory = 4 AND itemType = 3
+						</if>
+						<if test="storeType == 'bg'">
+							itemCategory = 5 AND itemType = 1
+						</if>
+						<if test="storeType == 'tbg'">
+							itemCategory = 5 AND itemType = 2
+						</if>
+						<if test="storeType == ''">
+							itemCategory != "" AND itemType != ""
+						</if>
+					</where>
+					<if test="productCode != ''">
+						AND productCode LIKE CONCAT ('%',#{productCode},'%')
+					</if>
+					<if test="itemCode != ''">
+						AND itemCode LIKE CONCAT ('%',#{itemCode},'%')
+					</if>
+					<if test="productName != ''">
+						AND productName LIKE CONCAT ('%',#{productName},'%')
+					</if>
+            		)A, (SELECT @ROWNUM:=0)R
+				)Z
+		WHERE Z.ROWNUM BETWEEN #{start} AND #{end}
+	</select>
+	
+	<select id="productListDetail" resultType="ProductListDto">
+		SELECT * FROM PRODUCT_LIST
+		WHERE idx = #{productIdx}
+	</select>
+	
+	<update id="productModify" parameterType="ProductListDto">
+		UPDATE PRODUCT_LIST
+		<set>
+			<if test="productName != null">productName = #{productName},</if>
+			<if test="productDesc != null">productDesc = #{productDesc},</if>
+			<if test="popcornPrice != null">popcornPrice = #{popcornPrice},</if>
+			<if test="cornPrice != null">cornPrice = #{cornPrice},</if>
+			<if test="itemCode != null">itemCode = #{itemCode},</if>
+			<if test="itemCategory != null">itemCategory = #{itemCategory},</if>
+			<if test="itemType != null">itemType = #{itemType},</if>
+			<if test="storeMainMenuIdx != null">storeMainMenuIdx = #{storeMainMenuIdx},</if>
+			<if test="storeSubMenuIdx != null">storeSubMenuIdx = #{storeSubMenuIdx},</if>
+			<if test="discountPercent != null">discountPercent = #{discountPercent},</if>
+			<if test="storeCondition != null">storeCondition = #{storeCondition},</if>
+			<if test="viewYn != null">viewYn = #{viewYn}</if>
+		</set>
+		<where>
+			idx = #{idx}
+		</where>
+	</update>
+	
+	<select id="makeProductLastCode" resultType="ProductListDto">
+		SELECT productCode, itemCode
+		FROM PRODUCT_LIST
+		<where>
+			<if test="storeType == 'CLT'">
+				itemCategory = 1 AND itemType = 1
+			</if>
+			<if test="storeType == 'BIRD'">
+				itemCategory = 2 AND itemType = 1
+			</if>
+			<if test="storeType == 'BIRDEYE'">
+				itemCategory = 2 AND itemType = 2
+			</if>
+			<if test="storeType == 'BIRDMOUTH'">
+				itemCategory = 2 AND itemType = 3
+			</if>
+			<if test="storeType == 'BIRDFACE'">
+				itemCategory = 2 AND itemType = 4
+			</if>
+			<if test="storeType == 'DECOMID'">
+				itemCategory = 3 AND itemType = 1
+			</if>
+			<if test="storeType == 'DECOTOP'">
+				itemCategory = 3 AND itemType = 2
+			</if>
+			<if test="storeType == 'DECOFACE'">
+				itemCategory = 3 AND itemType = 3
+			</if>
+			<if test="storeType == 'TDECO'">
+				itemCategory = 3 AND itemType = 4
+			</if>
+			<if test="storeType == 'HOUSETOP'">
+				itemCategory = 4 AND itemType = 1
+			</if>
+			<if test="storeType == 'HOUSELOW'">
+				itemCategory = 4 AND itemType = 2
+			</if>
+			<if test="storeType == 'THOUSE'">
+				itemCategory = 4 AND itemType = 3
+			</if>
+			<if test="storeType == 'BG'">
+				itemCategory = 5 AND itemType = 1
+			</if>
+			<if test="storeType == 'TBG'">
+				itemCategory = 5 AND itemType = 2
+			</if>
+			<if test="storeType == ''">
+				itemCategory != "" AND itemType != ""
+			</if>
+		</where>
+		ORDER BY productCode DESC, itemCode DESC
+		LIMIT 1
+	</select>
+	
+	<select id="findLastCollectionCode" resultType="String">
+		SELECT productCode
+		FROM COLLECTION_ITEM_INFO
+		ORDER BY productCode DESC
+		LIMIT 1
+	</select>
+	
+	<select id="getNewItemCode" resultType="String">
+		SELECT item_code
+		FROM ITEM_INFO
+		<where>
+			<if test="itemType == 'BODY'">
+				item_type = 'BODY'
+			</if>
+			<if test="itemType == 'EYE'">
+				item_type = 'EYE'
+			</if>
+			<if test="itemType == 'MOUTH'">
+				item_type = 'MOUTH'
+			</if>
+			<if test="itemType == 'FACE'">
+				item_type = 'FACE'
+			</if>
+			<if test="itemType == 'CLOTHES'">
+				item_type = 'CLOTHES'
+			</if>
+			<if test="itemType == 'CAP'">
+				item_type = 'CAP'
+			</if>
+			<if test="itemType == 'GLASS'">
+				item_type = 'GLASS'
+			</if>
+			<if test="itemType == 'T_BODY'">
+				item_type = 'T_BODY'
+			</if>
+			<if test="itemType == 'ROOF'">
+				item_type = 'ROOF'
+			</if>
+			<if test="itemType == 'HOUSE'">
+				item_type = 'HOUSE'
+			</if>
+			<if test="itemType == 'T_HOUSE'">
+				item_type = 'T_HOUSE'
+			</if>
+			<if test="itemType == 'BACK'">
+				item_type = 'BACK'
+			</if>
+			<if test="itemType == 'T_BACK'">
+				item_type = 'T_BACK'
+			</if>
+		</where>
+		ORDER BY item_code DESC LIMIT 1
+	</select>
+	
+	<select id="getItemInfoDetail" resultType="ItemInfoDto">
+		SELECT item_code, item_name, item_desc
+		FROM ITEM_INFO
+		<where>
+			idx = #{itemIdx}
+		</where>
+	</select>
+	
+	<select id="exitsProduct" resultType="Integer">
+		SELECT COUNT(idx) AS CNT
+		FROM PRODUCT_LIST
+		WHERE productCode = #{productCode}
+		AND	itemCode = #{itemCode}
+	</select>
+	
+	<insert id="insertProduct" parameterType="ProductListDto">
+		INSERT INTO PRODUCT_LIST
+		(
+			productCode,
+			productName,
+			productDesc,
+			popcornPrice,
+			cornPrice,
+			itemCode,
+			itemCategory,
+			itemType,
+			storeMainMenuIdx,
+			storeSubMenuIdx,
+			disCountPercent,
+			storeCondition,
+			viewYn
+		)
+		VALUES
+		(
+			#{productCode},
+			#{productName},
+			#{productDesc},
+			#{popcornPrice},
+			#{cornPrice},
+			#{itemCode},
+			#{itemCategory},
+			#{itemType},
+			#{storeMainMenuIdx},
+			#{storeSubMenuIdx},
+			#{discountPercent},
+			#{storeCondition},
+			#{viewYn}
+		)
+	</insert>
+	
+	<insert id="insertItemInfo" parameterType="ItemInfoDto">
+		INSERT INTO ITEM_INFO
+		(
+			item_code, item_name, item_desc, item_type
+		)
+		VALUES
+		(
+			#{itemCode}, #{itemName}, #{itemDesc}, #{itemType}
+		)
+	</insert>
+	
+	<delete id="productDelete">
+		DELETE FROM PRODUCT_LIST
+		WHERE idx = #{productIdx}
+	</delete>
+	
+	<delete id="deleteItemInfo">
+		DELETE FROM ITEM_INFO
+		WHERE idx = #{itemIdx}
+	</delete>
+	
+	<update id="modifyItemInfo">
+		UPDATE ITEM_INFO
+		<set>
+			<if test="itemName != ''">
+				item_name = #{itemName},
+			</if>
+			<if test="itemDesc != ''">
+				item_desc = #{itemDesc},
+			</if>
+		</set>
+		<where>
+			<if test="itemIdx > 0">
+				idx = #{itemIdx}
+			</if>
+		</where>
+	</update>
+	
+	<select id="collectionItemInfo" resultType="CollectionItemInfoDto">
+		SELECT * FROM COLLECTION_ITEM_INFO
+		WHERE productCode = #{productCode}
+	</select>
+	
+	<select id="getItemName" resultType="String">
+		SELECT item_name
+		FROM ITEM_INFO
+		<where>
+			<if test="itemCode != ''">
+				item_code = #{itemCode}			
+			</if>
+		</where>
+	</select>
+	
+	<select id="getItemList" resultType="ProductListDto">
+		SELECT productCode, productName, itemCode
+		FROM PRODUCT_LIST
+		<where>
+			<if test="itemType == 'COL'">
+				itemCategory = 1 AND itemType = 2
+			</if>
+			<if test="itemType == 'BODY'">
+				itemCategory = 2 AND itemType = 1
+			</if>
+			<if test="itemType == 'EYE'">
+				itemCategory = 2 AND itemType = 2
+			</if>
+			<if test="itemType == 'MOUTH'">
+				itemCategory = 2 AND itemType = 3
+			</if><if test="itemType == 'FACE'">
+				itemCategory = 2 AND itemType = 4
+			</if>
+			<if test="itemType == 'CLOTHES'">
+				itemCategory = 3 AND itemType = 1
+			</if>
+			<if test="itemType == 'CAP'">
+				itemCategory = 3 AND itemType = 2
+			</if>
+			<if test="itemType == 'GLASS'">
+				itemCategory = 3 AND itemType = 3
+			</if>
+			<if test="itemType == 'COSTUM'">
+				itemCategory = 3 AND itemType = 4
+			</if>
+			<if test="itemType == 'ROOF'">
+				itemCategory = 4 AND itemType = 1
+			</if>
+			<if test="itemType == 'HOUSE'">
+				itemCategory = 4 AND itemType = 2
+			</if>
+			<if test="itemType == 'THEME_HOUSE'">
+				itemCategory = 4 AND itemType = 3
+			</if>
+			<if test="itemType == 'BG'">
+				itemCategory = 5 AND itemType = 1
+			</if>
+			<if test="itemType == 'THEME_BG'">
+				itemCategory = 5 AND itemType = 2
+			</if>
+		</where>
+	</select>
+	
+	<insert id="collectionItemInfoInsert" parameterType="CollectionItemInfoDto">
+		INSERT INTO
+			COLLECTION_ITEM_INFO
+			(
+				productCode,
+				bodyCode,
+				capCode,
+				glassCode,
+				costumCode,
+				roofCode,
+				houseCode,
+				themeHouseCode,
+				bgCode,
+				themeBgCode,
+				collectionName,
+				collectionDesc	
+			)
+			VALUES
+			(
+				#{productCode},
+				#{bodyCode},
+				#{capCode},
+				#{glassCode},
+				#{costumCode},
+				#{roofCode},
+				#{houseCode},
+				#{themeHouseCode},
+				#{bgCode},
+				#{themeBgCode},
+				#{collectionName},
+				#{collectionDesc}
+			)
+	</insert>
+	
+	<select id="collectionItemInfoList" resultType="CollectionItemInfoDto">
+		SELECT *
+			FROM(
+				SELECT @ROWNUM:=@ROWNUM+1 AS ROWNUM, A.idx, A.productCode, A.costumCode,
+						 A.themeHouseCode, A.themeBgCode, A.collectionName, A.collectionDesc
+		        FROM(
+					SELECT  ci.idx, ci.productCode, ci.collectionName, ci.collectionDesc,
+							(select item_name from ITEM_INFO ii where ci.costumCode = ii.item_code) as costumCode,
+							(select item_name from ITEM_INFO ii where ci.themeHouseCode = ii.item_code COLLATE utf8mb4_general_ci) as themeHouseCode,
+							(select item_name from ITEM_INFO ii where ci.themeBgCode = ii.item_code COLLATE utf8mb4_general_ci) as themeBgCode
+					FROM COLLECTION_ITEM_INFO ci
+		            )A, (SELECT @ROWNUM:=0)R
+		            <where>
+		            	<if test="productCode != ''">
+		            		A.productCode LIKE CONCAT('%',#{productCode},'%')
+		            	</if>
+		            </where>
+				) Z
+			WHERE Z.ROWNUM BETWEEN #{start} AND #{end}
+	</select>
+	
+	<select id="regAvailableCollectionItemInfoList" resultType="CollectionItemInfoDto">
+		SELECT *
+			FROM (
+				SELECT @ROWNUM:=@ROWNUM+1 as ROWNUM, A.*
+				FROM (
+					SELECT ci.*
+					FROM COLLECTION_ITEM_INFO ci LEFT JOIN PRODUCT_LIST pl
+					ON ci.productCode = pl.productCode
+					WHERE pl.productCode is null
+				)A, (SELECT @ROWNUM:=0)R
+			)Z
+		WHERE Z.ROWNUM BETWEEN #{start} AND #{end}
+	</select>
+	
+	<select id="collectionItemInfoListCnt" resultType="Integer">
+		SELECT COUNT(idx) AS CNT
+		FROM COLLECTION_ITEM_INFO
+		<where>
+			<if test="productCode != ''">
+				productCode LIKE CONCAT('%',#{productCode},'%')
+			</if>
+		</where>
+	</select>
+	
+	<select id="regAvailableCollectionItemInfoListCnt" resultType="Integer">
+		SELECT count(ci.idx) as CNT
+		FROM COLLECTION_ITEM_INFO ci LEFT JOIN PRODUCT_LIST pl
+		ON ci.productCode = pl.productCode
+		WHERE pl.productCode is null
+	</select>
+	
+	<update id="updateCollectionItemInfo" parameterType="CollectionItemInfoDto">
+		UPDATE COLLECTION_ITEM_INFO
+		<set>
+			<if test="collectionName != ''">
+				collectionName = #{collectionName},
+			</if>
+			<if test="collectionDesc != ''">
+				collectionDesc = #{collectionDesc},
+			</if>
+			<if test="bodyCode != ''">
+				bodyCode = #{bodyCode},
+			</if>
+			<if test="capCode != ''">
+				capCode = #{capCode},
+			</if>
+			<if test="glassCode != ''">
+				glassCode = #{glassCode},
+			</if>
+			<if test="costumCode != ''">
+				costumCode = #{costumCode},
+			</if>
+			<if test="roofCode != ''">
+				roofCode = #{roofCode},
+			</if>
+			<if test="houseCode != ''">
+				houseCode = #{houseCode},
+			</if>
+			<if test="themeHouseCode != ''">
+				themeHouseCode = #{themeHouseCode},
+			</if>
+			<if test="bgCode != null">
+				bgCode = #{bgCode},
+			</if>
+			<if test="themeBgCode != ''">
+				themeBgCode = #{themeBgCode},
+			</if>
+		</set>
+		<where>
+			<if test="productCode != ''">
+				productCode = #{productCode}
+			</if>
+		</where>
+	</update>
+	
+	<delete id="deleteCollectionItem">
+		DELETE FROM COLLECTION_ITEM_INFO
+		<where>
+			<if test="productCode != ''">
+				productCode = #{productCode}
+			</if>
+		</where>
+	</delete>
+	
+	<select id="finfUserCornPopcornPayTotal" resultType="Map">
+		SELECT sum(cornPrice) AS cornPrice, sum(popcornPrice) AS popcornPrice
+		FROM USER_PRODUCT_BUY_LOG
+		<where>
+			<if test="userId != null">
+				user_id = #{userId}
+			</if>
+		</where>
+	</select>
+	
+	<select id="cornInfoList" resultType="CornInfoDto">
+		SELECT *
+			FROM(
+				SELECT @ROWNUM:=@ROWNUM+1 AS ROWNUM, A.*
+				FROM(
+					SELECT idx, corn_idx, corn_count, corn_desc, discountPercent,
+					(
+                      CASE corn_count
+                      WHEN 10 THEN 1100
+                      WHEN 22 THEN 2200
+                      WHEN 55 THEN 5500
+                      WHEN 115 THEN 11000
+                      WHEN 240 THEN 22000
+                      WHEN 600 THEN 55000
+                      ELSE corn_count END
+					) as price
+					FROM CORN_INFO
+					)A, (SELECT @ROWNUM:=0)R
+				)Z
+			WHERE Z.ROWNUM BETWEEN #{start} AND #{end}
+	</select>
+	
+	<select id="cornInfoListCnt" resultType="Integer">
+		SELECT count(idx) AS cnt
+		FROM CORN_INFO
+	</select>
+	
+	<select id="cornInfoDetail" resultType="CornInfoDto">
+		SELECT * FROM CORN_INFO
+		<where>
+			<if test="cornIdx > 0">
+				corn_idx = #{cornIdx}
+			</if>
+		</where>
+	</select>
+	
+	<update id="modifyCornInfo" parameterType="CornInfoDto">
+		UPDATE CORN_INFO
+		<set>
+			<if test="cornDesc != ''">
+				corn_desc = #{cornDesc},
+			</if>
+			<if test="cornCount != ''">
+				corn_count = #{cornCount},
+			</if>
+			<if test="discountPercent > -1">
+				discountPercent = #{discountPercent},
+			</if>
+		</set>
+		<where>
+			<if test="cornIdx > 0">
+				corn_idx = #{cornIdx}
+			</if>
+		</where>
+	</update>
+	
+	<select id="popcornInfoList" resultType="PopcornInfoDto">
+		SELECT *
+			FROM (
+				SELECT @ROWNUM:=@ROWNUM+1 AS ROWNUM, 
+						A.popcorn_idx,
+		                A.popcorn_name,
+		                A.popcorn_point,
+		                A.corn_count
+		        FROM (
+					SELECT * FROM POPCORN_INFO
+					)A, (SELECT @ROWNUM:=0)R
+				)Z
+			WHERE Z.ROWNUM BETWEEN #{start} AND #{end}
+	</select>
+	
+	<select id="popcornInfoListCnt" resultType="Integer">
+		SELECT count(idx) AS cnt
+		FROM POPCORN_INFO
+	</select>
+	
+	<select id="popcornInfoDetail" resultType="PopcornInfoDto">
+		SELECT popcorn_name, popcorn_point, corn_count
+		FROM POPCORN_INFO
+		<where>
+			<if test="popcornIdx > 0">
+				popcorn_idx = #{popcornIdx}
+			</if>
+		</where>
+	</select>
+	
+	<select id="itemListCnt" resultType="Integer">
+		SELECT count(item_code) as cnt
+		FROM ITEM_INFO
+		<where>
+			<if test="itemType != ''">
+				item_type = #{itemType}	
+			</if>
+		</where>
+	</select>
+	
+	<select id="regAvailableItemListCnt" resultType="Integer">
+		SELECT count(ii.idx) as cnt
+		FROM ITEM_INFO ii LEFT JOIN PRODUCT_LIST pl
+		ON ii.item_code = pl.itemCode
+		WHERE pl.itemCode is null
+		<if test="itemType != ''">
+			AND ii.item_type = #{itemType}
+		</if>
+	</select>
+	
+	<select id="itemList" resultType="ItemInfoDto">
+		SELECT * 
+			FROM (
+			        SELECT @ROWNUM:=@ROWNUM+1 as ROWNUM, A.*
+			        FROM (
+			                SELECT idx, item_code, item_name, item_desc 
+			                FROM ITEM_INFO
+			                <where>
+			                	<if test="itemType != ''">
+			                		item_type = #{itemType}
+			                	</if>
+			                </where>
+			                ORDER BY item_code ASC
+			              )A, (SELECT @ROWNUM:=0)R
+			     )Z
+		WHERE Z.ROWNUM BETWEEN #{start} AND #{end}
+	</select>
+	
+	<select id="regAvailableItemList" resultType="ItemInfoDto">
+		SELECT *
+			FROM (
+				SELECT @ROWNUM:=@ROWNUM + 1 as ROWNUM, A.*
+				FROM (
+					SELECT ii.*
+					FROM ITEM_INFO ii LEFT JOIN PRODUCT_LIST pl
+					ON ii.item_code = pl.itemCode
+					WHERE pl.itemCode is null
+					<if test="itemType != ''">
+						AND ii.item_type = #{itemType}
+					</if>
+				) A, (SELECT @ROWNUM:=0)R
+			) Z
+		WHERE Z.ROWNUM BETWEEN #{start} AND #{end}
+	</select>
+	
+	<select id="getItemNames" resultType="String">
+		SELECT item_code
+		FROM ITEM_INFO
+		<where>
+			idx IN
+			<foreach collection="idxs" item="idx" separator="," open="(" close=")">
+				#{idx}
+			</foreach> 
+		</where>
+	</select>
+	
+	<select id="gatchaUseLog" resultType="GatchaUseLogDto">
+		SELECT * 
+			FROM (
+				SELECT @ROWNUM:=@ROWNUM+1 AS ROWNUM, Z.* 
+				FROM (
+					SELECT E.phone_number, B.user_name, C.item_name, C.item_code, D.cornPrice, 
+							D.popcornPrice, IF(A.reward_point=1001,'가차', A.reward_point)as reward_point, 
+							DATE_ADD(A.create_date, INTERVAL 9 HOUR) as create_date
+					FROM GATCHA_USE_LOG A LEFT JOIN USER_PROFILE B
+					ON A.user_id = B.user_id LEFT JOIN ITEM_INFO C
+					ON A.item_code = C.item_code LEFT JOIN PRODUCT_LIST D
+					ON C.item_code = D.itemCode LEFT JOIN BIRD_USER E
+					ON A.user_id = E.user_id
+					ORDER BY create_date DESC
+				)Z, (SELECT @ROWNUM:=0)R
+			) ZZ
+		<if test="start > 0 and end > 0">
+			WHERE ZZ.ROWNUM BETWEEN #{start} AND #{end}
+		</if>
+		<if test="startDate != '' and startDate != null">
+			AND ZZ.create_date BETWEEN #{startDate} AND #{endDate}
+		</if>
+		<if test="phoneNumber != '' and phoneNumber != null">
+			AND ZZ.phone_number LIKE CONCAT('%', #{phoneNumber}, '%')  
+		</if>
+		<if test="userName != '' and userName != null">
+			AND ZZ.user_name LIKE CONCAT('%', #{userName}, '%')
+		</if>
+	</select>
+	
+	<select id="gatchaUseLogCnt" resultType="Integer">
+		SELECT count(A.user_id) as CNT
+		FROM GATCHA_USE_LOG A LEFT JOIN USER_PROFILE B
+		ON A.user_id = B.user_id LEFT JOIN ITEM_INFO C
+		ON A.item_code = C.item_code LEFT JOIN PRODUCT_LIST D
+		ON C.item_code = D.itemCode LEFT JOIN BIRD_USER E
+		ON A.user_id = E.user_id
+		WHERE A.user_id is not null
+		<if test="phoneNumber != '' and phoneNumber != null">
+			AND E.phone_number LIKE CONCAT('%', #{phoneNumber}, '%') 
+		</if>
+		<if test="userName != '' and userName != null">
+			AND B.user_name LIKE CONCAT('%', #{userName}, '%')
+		</if>
+		<if test="startDate != '' and startDate != null">
+			AND DATE_ADD(A.create_date, INTERVAL 9 HOUR) BETWEEN #{startDate} AND #{endDate}
+		</if>
+	</select>
+	
+	<select id="nestItemBuyLogList" resultType="NestItemBuyLogDto">
+		SELECT * 
+	        FROM (
+	                SELECT @ROWNUM:=@ROWNUM+1 AS ROWNUM, Z.*
+	                FROM (
+	                        SELECT A.user_id, D.phone_number, E.user_name, A.product_code, 
+	                        	   C.item_name, DATE_ADD(A.create_date, INTERVAL 9 HOUR) as create_date
+	                        FROM NEST_STAT_USER_ITEM_BUY_LOG A LEFT JOIN NEST_STAT_ITEM_PRODUCT B
+	                        ON A.product_code = B.product_code LEFT JOIN NEST_STAT_ITEM C
+	                        ON B.nest_item_id = C.nest_item_id LEFT JOIN BIRD_USER D
+	                        ON A.user_id = D.user_id LEFT JOIN USER_PROFILE E
+	                        ON D.user_id = E.user_id
+	                        WHERE A.product_code != 'ITEM_011'
+	                        ORDER BY create_date DESC
+	                     ) Z, (SELECT @ROWNUM:=0)R
+	               )ZZ
+		<if test="start > 0 and end > 0">
+			WHERE ZZ.ROWNUM BETWEEN #{start} AND #{end}
+		</if>
+		 <if test="startDate != '' and startDate != null">
+			AND ZZ.create_date BETWEEN #{startDate} AND #{endDate}
+		</if>
+		<if test="phoneNumber != '' and phoneNumber != null">
+			AND ZZ.phone_number LIKE CONCAT('%', #{phoneNumber}, '%')  
+		</if>
+		<if test="userName != '' and userName != null">
+			AND ZZ.user_name LIKE CONCAT('%', #{userName}, '%')
+		</if>
+	</select>
+	
+	<select id="nestItemBuyLogListCnt" resultType="Integer">
+		SELECT count(A.user_id) as CNT
+        FROM NEST_STAT_USER_ITEM_BUY_LOG A LEFT JOIN NEST_STAT_ITEM_PRODUCT B
+        ON A.product_code = B.product_code LEFT JOIN NEST_STAT_ITEM C
+        ON B.nest_item_id = C.nest_item_id LEFT JOIN BIRD_USER D
+        ON A.user_id = D.user_id LEFT JOIN USER_PROFILE E
+        ON D.user_id = E.user_id
+        WHERE A.product_code != 'ITEM_011'
+        <if test="phoneNumber != '' and phoneNumber != null">
+			AND D.phone_number LIKE CONCAT('%', #{phoneNumber}, '%') 
+		</if>
+		<if test="userName != '' and userName != null">
+			AND E.user_name LIKE CONCAT('%', #{userName}, '%')
+		</if>
+		<if test="startDate != '' and startDate != null">
+			AND DATE_ADD(A.create_date, INTERVAL 9 HOUR) BETWEEN #{startDate} AND #{endDate}
+		</if>
+	</select>
+</mapper>

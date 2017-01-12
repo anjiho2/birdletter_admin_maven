@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.challabros.birdletter.admin.mapper.LetterMapper">
+
+	<select id="openLetterList" parameterType="Map" resultType="OpenLetterDto">
+		SELECT * 
+			FROM (
+				SELECT @ROWNUM:=@ROWNUM+1 as ROWNUM, A.*
+	         		FROM (                   
+			                SELECT  
+			                	a.open_letter_id, DATE_ADD(a.create_date, INTERVAL 9 HOUR) as create_date,
+			                	DATE_ADD(a.update_date, INTERVAL 9 HOUR) as update_date, 
+								d.phone_number, c.user_name, 
+								<if test="letterType == 'POPULAR'">
+									e.weekly_ranking, e.best_ranking,
+								</if>
+								<if test="letterType == 'NEW'">
+									IFNULL(e.weekly_ranking,0)as weekly_ranking, IFNULL(e.best_ranking,0)as best_ranking,
+								</if>
+								<if test="letterType == 'BEST'">
+									e.weekly_ranking, e.best_ranking,
+								</if>
+								<if test="letterType == 'REPORT'">
+									IFNULL(e.weekly_ranking,0)as weekly_ranking, IFNULL(e.best_ranking,0)as best_ranking,
+								</if>
+								b.heart_count, b.shared_count, b.letter_comment_count, b.letter_report_count
+			                FROM OPEN_LETTER_SQUARE_INFO a left join OPEN_LETTER b
+			                ON a.open_letter_id = b.letter_id
+			                LEFT JOIN USER_PROFILE c
+			                ON b.owner_id = c.user_id
+			                LEFT JOIN BIRD_USER d
+			                ON c.user_id = d.user_id
+			                <if test="letterType == 'POPULAR'">
+			                	LEFT JOIN OPEN_LETTER_SQUARE_RANKING e 
+								ON 	a.open_letter_square_id = e.open_letter_square_id	
+			                </if>
+			                <if test="letterType == 'NEW'">
+			                	LEFT OUTER JOIN OPEN_LETTER_SQUARE_RANKING e
+								ON 	a.open_letter_square_id = e.open_letter_square_id
+			                </if>
+			                <if test="letterType == 'BEST'">
+			                	LEFT JOIN OPEN_LETTER_SQUARE_RANKING e
+								ON 	a.open_letter_square_id = e.open_letter_square_id
+			                </if>
+			                <if test="letterType == 'REPORT'">
+			                	LEFT OUTER JOIN OPEN_LETTER_SQUARE_RANKING e
+								ON 	a.open_letter_square_id = e.open_letter_square_id
+			                </if>
+			                WHERE d.user_status = 'NORMAL'
+			                <if test="startDate != ''">
+			                	AND DATE_ADD(a.create_date, INTERVAL 9 HOUR) BETWEEN #{startDate} AND #{endDate}
+			                </if>
+			                <if test="userName != ''">
+			                	AND c.user_name LIKE CONCAT('%',#{userName},'%')
+			                </if>
+			                <if test="phoneNumber != ''">
+			                	AND d.phone_number LIKE CONCAT('%',#{phoneNumber},'%')
+			                </if>
+			                <if test="letterType == 'POPULAR'">
+			                	AND e.weekly_ranking BETWEEN '1' AND '100' ORDER BY e.weekly_ranking asc
+			                </if>
+							<if test="letterType == 'NEW'">
+								ORDER BY a.create_date DESC
+							</if>
+							<if test="letterType == 'BEST'">
+								AND e.best_ranking > 0 order by e.best_ranking=0 asc, e.best_ranking asc
+							</if>
+							<if test="letterType == 'REPORT'">
+								AND b.letter_report_count > 0
+							</if>
+		                )A, (SELECT @ROWNUM:=0)R
+		                	<if test="sortType == 'WEEK'">
+		                		ORDER BY A.weekly_ranking ASC
+		                	</if>
+		                	<if test="sortType == 'BEST'">
+		                		ORDER BY A.best_ranking=0 ASC, Z.best_ranking ASC
+		                	</if>
+		                	<if test="sortType == 'HEART'">
+		                		ORDER BY A.heart_count DESC
+		                	</if>
+		                	<if test="sortType == 'SHARE'">
+		                		ORDER BY A.shared_count DESC
+		                	</if>
+		                	<if test="sortType == 'REPLY'">
+		                		ORDER BY A.letter_comment_count DESC
+		                	</if>
+		                	<if test="sortType == 'REPORT'">
+		                		ORDER BY A.letter_report_count DESC
+		                	</if>
+					)Z
+				WHERE Z.ROWNUM BETWEEN #{start} AND #{end}
+	</select>
+	
+	
+	<select id="openLetterListCnt" parameterType="Map" resultType="Integer">
+		SELECT count(a.open_letter_id) as cnt
+		FROM OPEN_LETTER_SQUARE_INFO a LEFT JOIN OPEN_LETTER b
+		ON a.open_letter_id = b.letter_id LEFT JOIN BIRD_USER c
+		ON b.owner_id = c.user_id LEFT JOIN USER_PROFILE d
+		ON c.user_id = d.user_id LEFT JOIN OPEN_LETTER_SQUARE_RANKING e
+		ON a.open_letter_square_id = e.open_letter_square_id
+		WHERE c.user_status = 'NORMAL'
+		<if test="startDate != ''">
+			AND DATE_ADD(a.create_date, INTERVAL 9 HOUR) BETWEEN #{startDate} AND #{endDate}
+		</if>
+		<if test="userName != ''">
+			AND d.user_name LIKE CONCAT('%',#{userName},'%')
+		</if>
+		<if test="phoneNumber != ''">
+			AND c.phone_number LIKE CONCAT('%',#{phoneNumber},'%')
+		</if>		
+		<if test="letterType == 'POPULAR'">
+			AND e.weekly_ranking BETWEEN '1' AND '100' ORDER BY e.weekly_ranking asc
+			<if test="sortType == 'REPORT'">
+				,b.letter_report_count DESC
+			</if>
+		</if>
+		<if test="letterType == 'BEST'">
+			AND e.best_ranking > 0 order by e.best_ranking=0 asc, e.best_ranking asc
+		</if>
+		<if test="letterType == 'REPORT'">
+			AND b.letter_report_count > 0
+		</if>
+	</select>
+	
+	<select id="detailOpenLetter" parameterType="Long" resultType="OpenLetterDto">
+		SELECT 
+			a.open_letter_id, b.OPEN_LETTER_TYPE, c.user_name, d.phone_number, 
+			IFNULL(e.weekly_ranking,0)as weekly_ranking, 
+			IFNULL(e.best_ranking,0)as best_ranking,
+			b.block_yn, b.heart_count, 
+			b.shared_count, b.letter_comment_count, b.letter_report_count,
+			DATE_ADD(a.create_date, INTERVAL 9 HOUR) as create_date,
+			DATE_ADD(a.update_date, INTERVAL 9 HOUR) as update_date
+		FROM
+			OPEN_LETTER_SQUARE_INFO a LEFT JOIN OPEN_LETTER b
+			ON a.open_letter_id = b.letter_id LEFT JOIN USER_PROFILE c
+			ON b.owner_id = c.user_id LEFT JOIN BIRD_USER d
+			ON c.user_id = d.user_id LEFT JOIN OPEN_LETTER_SQUARE_RANKING e
+			ON a.open_letter_square_id = e.open_letter_square_id
+		WHERE d.user_status = 'NORMAL'
+		AND a.open_letter_id = #{letterId}
+	</select>
+	
+	<select id="countSquareLetterReport" parameterType="Long" resultType="Integer">
+		SELECT COUNT(open_letter_id)as cnt
+		FROM OPEN_LETTER_ILLEGAL_REPORT
+		WHERE open_letter_id = #{letterId}	
+	</select>
+	
+	<select id="findSquareLetterReport" resultType="OpenLetterIllegalReportDto">
+		SELECT *
+			FROM (
+				SELECT @ROWNUM:=@ROWNUM+1 as ROWNUM, A.*
+				FROM (
+					SELECT
+						DATE_ADD(a.report_date, INTERVAL 9 HOUR) as report_date, b.phone_number, c.user_name, 
+						a.letter_illegal_type, a.report_message
+					FROM OPEN_LETTER_ILLEGAL_REPORT a LEFT JOIN BIRD_USER b
+					ON a.report_user_id = b.user_id LEFT JOIN USER_PROFILE c
+					ON b.user_id = c.user_id
+					WHERE a.open_letter_id = #{letterId}
+					ORDER BY a.report_date DESC
+				)A, (SELECT @ROWNUM:=0)R
+			)Z
+		WHERE Z.ROWNUM BETWEEN #{start} AND #{end}
+	</select>
+	
+	<update id="blockOpenLetter">
+		UPDATE OPEN_LETTER
+		SET block_yn = #{blockYn}
+		WHERE letter_id = #{letterId}
+	</update>
+</mapper>
